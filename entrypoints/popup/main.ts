@@ -3,6 +3,7 @@ import type {GetAccountsResult} from '@/lib/messages';
 import {sendBackgroundMessage} from '@/lib/messages';
 import {
   attachAddAccountHandler,
+  attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
@@ -37,6 +38,9 @@ async function loadAndRender(container: HTMLElement): Promise<void> {
   });
   attachRenameAccountHandler(container, (accountId, label) => {
     void handleRenameAccount(container, accountId, label);
+  });
+  attachRemoveAccountHandler(container, accountId => {
+    void handleRemoveAccount(container, accountId);
   });
 }
 
@@ -89,5 +93,19 @@ async function handleRenameAccount(
     console.error('Failed to rename account', error);
     await loadAndRender(container);
     showListError(container, "Couldn't rename this shop. Try again.");
+  }
+}
+
+async function handleRemoveAccount(
+  container: HTMLElement,
+  accountId: string,
+): Promise<void> {
+  try {
+    await sendBackgroundMessage<void>({type: 'REMOVE_ACCOUNT', id: accountId});
+    await loadAndRender(container);
+  } catch (error) {
+    console.error('Failed to remove account', error);
+    await loadAndRender(container);
+    showListError(container, "Couldn't remove this shop. Try again.");
   }
 }

@@ -2,6 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import type {Account} from './accounts';
 import {
   attachAddAccountHandler,
+  attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
@@ -257,6 +258,77 @@ describe('attachRenameAccountHandler', () => {
 
     expect(onRename).not.toHaveBeenCalled();
     expect(container.textContent).toContain('Old Name');
+  });
+});
+
+describe('attachRemoveAccountHandler', () => {
+  it('clicking Remove swaps the action buttons for a Confirm/Cancel pair', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Shop A'})], null);
+    attachRemoveAccountHandler(container, vi.fn());
+
+    container
+      .querySelector<HTMLButtonElement>('[data-remove-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(container.querySelector('[data-remove-confirm="a"]')).not.toBeNull();
+    expect(container.querySelector('[data-remove-cancel]')).not.toBeNull();
+    expect(container.textContent).toContain('Shop A');
+  });
+
+  it('Confirm calls onRemove with the account id and disables itself', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Shop A'})], null);
+    const onRemove = vi.fn();
+    attachRemoveAccountHandler(container, onRemove);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-remove-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const confirmButton = container.querySelector<HTMLButtonElement>(
+      '[data-remove-confirm="a"]',
+    );
+    confirmButton!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRemove).toHaveBeenCalledWith('a');
+    expect(confirmButton!.disabled).toBe(true);
+  });
+
+  it('ignores a second click on an already-disabled Confirm button', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Shop A'})], null);
+    const onRemove = vi.fn();
+    attachRemoveAccountHandler(container, onRemove);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-remove-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const confirmButton = container.querySelector<HTMLButtonElement>(
+      '[data-remove-confirm="a"]',
+    );
+    confirmButton!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    confirmButton!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('Cancel restores the original Rename/Remove/Switch buttons without calling onRemove', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Shop A'})], null);
+    const onRemove = vi.fn();
+    attachRemoveAccountHandler(container, onRemove);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-remove-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    container
+      .querySelector<HTMLButtonElement>('[data-remove-cancel]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-remove-confirm]')).toBeNull();
+    expect(container.querySelector('[data-remove-account="a"]')).not.toBeNull();
+    expect(container.querySelector('[data-switch-account="a"]')).not.toBeNull();
   });
 });
 
