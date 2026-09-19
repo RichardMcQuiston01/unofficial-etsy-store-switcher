@@ -1,10 +1,12 @@
-import {beforeEach, describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {fakeBrowser} from 'wxt/testing/fake-browser';
-import {addAccount, type Account} from './accounts';
+import {addAccount, getAccounts, type Account} from './accounts';
 import {handleMessage} from './background-handlers';
+import {makeCookie, mockCookiesGetAll} from './testing/mock-cookies';
 
 beforeEach(() => {
   fakeBrowser.reset();
+  vi.restoreAllMocks();
 });
 
 describe('handleMessage', () => {
@@ -16,7 +18,9 @@ describe('handleMessage', () => {
     expect(response).toEqual({ok: true, data: [account]});
   });
 
-  it('ADD_ACCOUNT saves and returns the new account', async () => {
+  it('ADD_ACCOUNT captures the current session and saves the account', async () => {
+    mockCookiesGetAll([makeCookie()]);
+
     const response = await handleMessage({
       type: 'ADD_ACCOUNT',
       input: {label: 'My Shop'},
@@ -24,6 +28,18 @@ describe('handleMessage', () => {
 
     expect(response.ok).toBe(true);
     expect(response.ok && (response.data as Account).label).toBe('My Shop');
+  });
+
+  it('ADD_ACCOUNT rolls back the account if no session could be captured', async () => {
+    mockCookiesGetAll([]); // not logged into Etsy
+
+    const response = await handleMessage({
+      type: 'ADD_ACCOUNT',
+      input: {label: 'My Shop'},
+    });
+
+    expect(response.ok).toBe(false);
+    expect(await getAccounts()).toEqual([]);
   });
 
   it('RENAME_ACCOUNT updates the label', async () => {

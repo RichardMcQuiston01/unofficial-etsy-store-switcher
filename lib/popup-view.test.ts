@@ -1,6 +1,11 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import type {Account} from './accounts';
-import {renderError, renderPopup} from './popup-view';
+import {
+  attachAddAccountHandler,
+  renderError,
+  renderPopup,
+  showAddAccountError,
+} from './popup-view';
 
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {
@@ -64,5 +69,68 @@ describe('renderError', () => {
     renderError(container);
 
     expect(container.textContent).toContain("Couldn't load your saved shops");
+  });
+});
+
+describe('add-account form', () => {
+  it('is present in both the empty state and the account list', () => {
+    const emptyContainer = document.createElement('div');
+    renderPopup(emptyContainer, []);
+    expect(
+      emptyContainer.querySelector('[data-add-account-form]'),
+    ).not.toBeNull();
+
+    const listContainer = document.createElement('div');
+    renderPopup(listContainer, [makeAccount()]);
+    expect(
+      listContainer.querySelector('[data-add-account-form]'),
+    ).not.toBeNull();
+  });
+
+  it('calls onSubmit with the trimmed label and prevents the default page navigation', () => {
+    const container = document.createElement('div');
+    renderPopup(container, []);
+    const onSubmit = vi.fn();
+    attachAddAccountHandler(container, onSubmit);
+
+    const input = container.querySelector<HTMLInputElement>(
+      'input[name="label"]',
+    );
+    const form = container.querySelector<HTMLFormElement>(
+      '[data-add-account-form]',
+    );
+    input!.value = '  My Shop  ';
+    const event = new Event('submit', {cancelable: true});
+    form!.dispatchEvent(event);
+
+    expect(onSubmit).toHaveBeenCalledWith('My Shop');
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('does not call onSubmit when the label is empty after trimming', () => {
+    const container = document.createElement('div');
+    renderPopup(container, []);
+    const onSubmit = vi.fn();
+    attachAddAccountHandler(container, onSubmit);
+
+    const input = container.querySelector<HTMLInputElement>(
+      'input[name="label"]',
+    );
+    const form = container.querySelector<HTMLFormElement>(
+      '[data-add-account-form]',
+    );
+    input!.value = '   ';
+    form!.dispatchEvent(new Event('submit', {cancelable: true}));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('showAddAccountError displays a message in the form', () => {
+    const container = document.createElement('div');
+    renderPopup(container, []);
+
+    showAddAccountError(container, 'Something went wrong.');
+
+    expect(container.textContent).toContain('Something went wrong.');
   });
 });

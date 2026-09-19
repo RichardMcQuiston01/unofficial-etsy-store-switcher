@@ -5,6 +5,7 @@ import {
   renameAccount,
 } from './accounts';
 import type {BackgroundRequest, BackgroundResponse} from './messages';
+import {captureSession, deleteSession} from './sessions';
 
 /**
  * Routes a request from the popup to the right storage-layer call and
@@ -19,8 +20,18 @@ export async function handleMessage(
       case 'GET_ACCOUNTS':
         return {ok: true, data: await getAccounts()};
 
-      case 'ADD_ACCOUNT':
-        return {ok: true, data: await addAccount(request.input)};
+      case 'ADD_ACCOUNT': {
+        const account = await addAccount(request.input);
+        try {
+          await captureSession(account.id);
+        } catch (error) {
+          // Roll back — an account with no captured session can never be
+          // switched to, so it's not meaningfully "saved".
+          await removeAccount(account.id);
+          throw error;
+        }
+        return {ok: true, data: account};
+      }
 
       case 'RENAME_ACCOUNT':
         await renameAccount(request.id, request.label);
@@ -28,6 +39,7 @@ export async function handleMessage(
 
       case 'REMOVE_ACCOUNT':
         await removeAccount(request.id);
+        await deleteSession(request.id);
         return {ok: true, data: undefined};
 
       case 'SWITCH_ACCOUNT':
