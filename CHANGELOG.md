@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Popup now renders real saved accounts (`lib/popup-view.ts`), sorted most-recently-used first, with an empty state for a fresh install. 9 Vitest unit tests.
 - Saving an Etsy account (`lib/sessions.ts`): captures the browser's current Etsy session cookies and stores them per account, so switching (Stage 5's next feature) can replay them without a re-login. Popup gained a real add-account form with inline error feedback (e.g. "make sure you're logged into Etsy"). 13 new Vitest unit tests (39 total).
 - Switching accounts (`lib/sessions.ts`): `applySession` clears the browser's live Etsy cookies and replays a saved account's session cookies in their place (host-only cookies are replayed without a `domain` so they don't get incorrectly widened into domain cookies); `switchToAccount` also best-effort re-captures the *outgoing* account's session first, so a token Etsy silently rotated since it was last saved isn't lost. Which account's session is currently live is now tracked (`local:activeAccountId`). `SWITCH_ACCOUNT` messages are fully wired end to end; saving a new account now marks it active, and removing the active account clears that marker. The popup shows an "Active" badge on the current account and a "Switch" button (disabled immediately on click to prevent double-submits) on every other one. 16 new Vitest unit tests (55 total). An `e2e/account-switch.spec.ts` Playwright test exercises the full save-then-switch flow against a real built extension.
+- Renaming an account: the popup's "Rename" button swaps an account's row into an inline edit form (pre-filled and pre-selected) instead of a separate dialog, wired to the already-built `RENAME_ACCOUNT` message. Enter saves, Escape/Cancel restores the original row without a network round-trip; an empty/whitespace label is rejected client-side. 6 new Vitest unit tests (61 total). `e2e/account-rename.spec.ts` covers save → rename → reopen popup.
 
 ### Fixed
 
@@ -27,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Project naming direction: "Store Switcheroo: Manage Multiple Online Shops," moving "Etsy" out of the title into the description to reduce trademark/impersonation review risk.
 - `GET_ACCOUNTS`'s response now returns `{accounts, activeAccountId}` instead of a bare account array, so the popup can show which account's session is currently live.
+- `lib/popup-view.ts`'s `showSwitchError`/`data-switch-error` were renamed to `showListError`/`data-list-error` now that the same banner surfaces both switch and rename failures.
 
 ### Removed
 
