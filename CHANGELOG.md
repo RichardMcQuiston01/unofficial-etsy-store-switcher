@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Switching accounts (`lib/sessions.ts`): `applySession` clears the browser's live Etsy cookies and replays a saved account's session cookies in their place (host-only cookies are replayed without a `domain` so they don't get incorrectly widened into domain cookies); `switchToAccount` also best-effort re-captures the *outgoing* account's session first, so a token Etsy silently rotated since it was last saved isn't lost. Which account's session is currently live is now tracked (`local:activeAccountId`). `SWITCH_ACCOUNT` messages are fully wired end to end; saving a new account now marks it active, and removing the active account clears that marker. The popup shows an "Active" badge on the current account and a "Switch" button (disabled immediately on click to prevent double-submits) on every other one. 16 new Vitest unit tests (55 total). An `e2e/account-switch.spec.ts` Playwright test exercises the full save-then-switch flow against a real built extension.
 - Renaming an account: the popup's "Rename" button swaps an account's row into an inline edit form (pre-filled and pre-selected) instead of a separate dialog, wired to the already-built `RENAME_ACCOUNT` message. Enter saves, Escape/Cancel restores the original row without a network round-trip; an empty/whitespace label is rejected client-side. 6 new Vitest unit tests (61 total). `e2e/account-rename.spec.ts` covers save → rename → reopen popup.
 - Removing an account: the popup's "Remove" button requires a second confirming click (an inline "Confirm"/"Cancel" pair in place of the row's usual buttons) rather than a native `confirm()` dialog, wired to the already-built `REMOVE_ACCOUNT` message. Removing the last saved account correctly returns the popup to its empty state. 4 new Vitest unit tests (65 total). `e2e/account-remove.spec.ts` covers save → remove-then-cancel → remove-then-confirm.
+- Extension icon set (`public/icon-16.png`, `icon-48.png`, `icon-128.png`): an original navy/white double-arrow (↔) glyph, deliberately clear of Etsy's brand colors and logo.
 
 ### Fixed
 
@@ -30,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Project naming direction: "Store Switcheroo: Manage Multiple Online Shops," moving "Etsy" out of the title into the description to reduce trademark/impersonation review risk.
 - `GET_ACCOUNTS`'s response now returns `{accounts, activeAccountId}` instead of a bare account array, so the popup can show which account's session is currently live.
 - `lib/popup-view.ts`'s `showSwitchError`/`data-switch-error` were renamed to `showListError`/`data-list-error` now that the same banner surfaces both switch and rename failures.
+- Widened the popup from 320px to 384px (`w-80` → `w-96`) — three per-account action buttons (Rename/Remove/Switch) were cramping shop labels down to a handful of visible characters at the old width.
 
 ### Removed
 
