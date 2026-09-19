@@ -3,9 +3,17 @@ import {
   getAccounts,
   removeAccount,
   renameAccount,
+  touchAccount,
 } from './accounts';
 import type {BackgroundRequest, BackgroundResponse} from './messages';
-import {captureSession, deleteSession} from './sessions';
+import {
+  captureSession,
+  clearActiveAccountIdIfMatches,
+  deleteSession,
+  getActiveAccountId,
+  setActiveAccountId,
+  switchToAccount,
+} from './sessions';
 
 /**
  * Routes a request from the popup to the right storage-layer call and
@@ -18,7 +26,13 @@ export async function handleMessage(
   try {
     switch (request.type) {
       case 'GET_ACCOUNTS':
-        return {ok: true, data: await getAccounts()};
+        return {
+          ok: true,
+          data: {
+            accounts: await getAccounts(),
+            activeAccountId: await getActiveAccountId(),
+          },
+        };
 
       case 'ADD_ACCOUNT': {
         const account = await addAccount(request.input);
@@ -30,6 +44,9 @@ export async function handleMessage(
           await removeAccount(account.id);
           throw error;
         }
+        // The session just captured is whatever's currently live in the
+        // browser, so this account is already the active one.
+        await setActiveAccountId(account.id);
         return {ok: true, data: account};
       }
 
@@ -40,14 +57,13 @@ export async function handleMessage(
       case 'REMOVE_ACCOUNT':
         await removeAccount(request.id);
         await deleteSession(request.id);
+        await clearActiveAccountIdIfMatches(request.id);
         return {ok: true, data: undefined};
 
       case 'SWITCH_ACCOUNT':
-        // TODO(Stage 5, feature/account-switch): swap session cookies via
-        // the cookies API and call touchAccount(request.id). Left
-        // unimplemented here since Stage 4 is scaffolding, not the switch
-        // mechanism itself.
-        return {ok: false, error: 'Account switching is not implemented yet'};
+        await switchToAccount(request.id);
+        await touchAccount(request.id);
+        return {ok: true, data: undefined};
 
       default: {
         const unknownType = (request as {type: string}).type;

@@ -1,5 +1,5 @@
 import {browser} from 'wxt/browser';
-import type {AddAccountInput} from './accounts';
+import type {Account, AddAccountInput} from './accounts';
 
 /** Requests the popup (and later, other UI) can send to the background worker. */
 export type BackgroundRequest =
@@ -8,6 +8,12 @@ export type BackgroundRequest =
   | {type: 'RENAME_ACCOUNT'; id: string; label: string}
   | {type: 'REMOVE_ACCOUNT'; id: string}
   | {type: 'SWITCH_ACCOUNT'; id: string};
+
+/** Data payload for a successful GET_ACCOUNTS response. */
+export interface GetAccountsResult {
+  accounts: Account[];
+  activeAccountId: string | null;
+}
 
 /**
  * A uniform envelope for every response, instead of letting each handler's

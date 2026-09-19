@@ -2,7 +2,13 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {fakeBrowser} from 'wxt/testing/fake-browser';
 import {addAccount, getAccounts, type Account} from './accounts';
 import {handleMessage} from './background-handlers';
-import {makeCookie, mockCookiesGetAll} from './testing/mock-cookies';
+import type {GetAccountsResult} from './messages';
+import {
+  makeCookie,
+  mockCookiesGetAll,
+  mockCookiesRemove,
+  mockCookiesSet,
+} from './testing/mock-cookies';
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -10,15 +16,18 @@ beforeEach(() => {
 });
 
 describe('handleMessage', () => {
-  it('GET_ACCOUNTS returns the stored accounts', async () => {
+  it('GET_ACCOUNTS returns the stored accounts and the active account id', async () => {
     const account = await addAccount({label: 'My Shop'});
 
     const response = await handleMessage({type: 'GET_ACCOUNTS'});
 
-    expect(response).toEqual({ok: true, data: [account]});
+    expect(response).toEqual({
+      ok: true,
+      data: {accounts: [account], activeAccountId: null},
+    });
   });
 
-  it('ADD_ACCOUNT captures the current session and saves the account', async () => {
+  it('ADD_ACCOUNT captures the current session, saves the account, and marks it active', async () => {
     mockCookiesGetAll([makeCookie()]);
 
     const response = await handleMessage({
@@ -27,7 +36,13 @@ describe('handleMessage', () => {
     });
 
     expect(response.ok).toBe(true);
-    expect(response.ok && (response.data as Account).label).toBe('My Shop');
+    const account = response.ok ? (response.data as Account) : undefined;
+    expect(account?.label).toBe('My Shop');
+
+    const getResponse = await handleMessage({type: 'GET_ACCOUNTS'});
+    expect(
+      getResponse.ok && (getResponse.data as GetAccountsResult).activeAccountId,
+    ).toBe(account?.id);
   });
 
   it('ADD_ACCOUNT rolls back the account if no session could be captured', async () => {
@@ -53,13 +68,20 @@ describe('handleMessage', () => {
 
     expect(response).toEqual({ok: true, data: undefined});
     const getResponse = await handleMessage({type: 'GET_ACCOUNTS'});
-    expect(getResponse.ok && (getResponse.data as Account[])[0]?.label).toBe(
-      'New Name',
-    );
+    expect(
+      getResponse.ok &&
+        (getResponse.data as GetAccountsResult).accounts[0]?.label,
+    ).toBe('New Name');
   });
 
-  it('REMOVE_ACCOUNT removes the account', async () => {
-    const account = await addAccount({label: 'My Shop'});
+  it('REMOVE_ACCOUNT removes the account and clears it as active if it was', async () => {
+    mockCookiesGetAll([makeCookie()]);
+    const addResponse = await handleMessage({
+      type: 'ADD_ACCOUNT',
+      input: {label: 'My Shop'},
+    });
+    const account = addResponse.ok ? (addResponse.data as Account) : undefined;
+    if (!account) throw new Error('setup failed');
 
     const response = await handleMessage({
       type: 'REMOVE_ACCOUNT',
@@ -68,10 +90,48 @@ describe('handleMessage', () => {
 
     expect(response).toEqual({ok: true, data: undefined});
     const getResponse = await handleMessage({type: 'GET_ACCOUNTS'});
-    expect(getResponse).toEqual({ok: true, data: []});
+    expect(getResponse).toEqual({
+      ok: true,
+      data: {accounts: [], activeAccountId: null},
+    });
   });
 
-  it('SWITCH_ACCOUNT reports not implemented yet (Stage 5)', async () => {
+  it('SWITCH_ACCOUNT swaps the live session, marks the account active, and touches it', async () => {
+    mockCookiesGetAll([makeCookie()]);
+    const addResponse = await handleMessage({
+      type: 'ADD_ACCOUNT',
+      input: {label: 'My Shop'},
+    });
+    const account = addResponse.ok ? (addResponse.data as Account) : undefined;
+    if (!account) throw new Error('setup failed');
+    const originalLastUsedAt = account.lastUsedAt;
+
+    mockCookiesGetAll([]);
+    mockCookiesSet();
+    mockCookiesRemove();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(originalLastUsedAt).getTime() + 1000);
+
+    const response = await handleMessage({
+      type: 'SWITCH_ACCOUNT',
+      id: account.id,
+    });
+    vi.useRealTimers();
+
+    expect(response).toEqual({ok: true, data: undefined});
+    const getResponse = await handleMessage({type: 'GET_ACCOUNTS'});
+    expect(getResponse.ok).toBe(true);
+    const {accounts, activeAccountId} = (
+      getResponse as {
+        ok: true;
+        data: GetAccountsResult;
+      }
+    ).data;
+    expect(activeAccountId).toBe(account.id);
+    expect(accounts[0]?.lastUsedAt).not.toBe(originalLastUsedAt);
+  });
+
+  it('SWITCH_ACCOUNT reports an error when there is no saved session for the account', async () => {
     const account = await addAccount({label: 'My Shop'});
 
     const response = await handleMessage({
