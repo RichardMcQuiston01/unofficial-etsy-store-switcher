@@ -2,11 +2,12 @@ import {describe, expect, it, vi} from 'vitest';
 import type {Account} from './accounts';
 import {
   attachAddAccountHandler,
+  attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
   renderPopup,
   showAddAccountError,
-  showSwitchError,
+  showListError,
 } from './popup-view';
 
 function makeAccount(overrides: Partial<Account> = {}): Account {
@@ -130,13 +131,132 @@ describe('attachSwitchAccountHandler', () => {
     expect(onSwitch).toHaveBeenCalledTimes(1);
   });
 
-  it('showSwitchError displays a message above the account list', () => {
+  it('showListError displays a message above the account list', () => {
     const container = document.createElement('div');
     renderPopup(container, [makeAccount()], null);
 
-    showSwitchError(container, 'Something went wrong.');
+    showListError(container, 'Something went wrong.');
 
     expect(container.textContent).toContain('Something went wrong.');
+  });
+});
+
+describe('attachRenameAccountHandler', () => {
+  it('clicking Rename swaps the item into an edit form pre-filled with the current label', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    attachRenameAccountHandler(container, vi.fn());
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-account-id="a"] [data-rename-input]',
+    );
+    expect(input).not.toBeNull();
+    expect(input!.value).toBe('Old Name');
+  });
+
+  it('Save calls onRename with the trimmed label', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    const onRename = vi.fn();
+    attachRenameAccountHandler(container, onRename);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-rename-input]',
+    );
+    input!.value = '  New Name  ';
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-save]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRename).toHaveBeenCalledWith('a', 'New Name');
+  });
+
+  it('does not call onRename when the trimmed label is empty', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    const onRename = vi.fn();
+    attachRenameAccountHandler(container, onRename);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-rename-input]',
+    );
+    input!.value = '   ';
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-save]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRename).not.toHaveBeenCalled();
+  });
+
+  it('pressing Enter in the input submits the rename', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    const onRename = vi.fn();
+    attachRenameAccountHandler(container, onRename);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-rename-input]',
+    );
+    input!.value = 'New Name';
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}),
+    );
+
+    expect(onRename).toHaveBeenCalledWith('a', 'New Name');
+  });
+
+  it('Cancel restores the original item without calling onRename', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    const onRename = vi.fn();
+    attachRenameAccountHandler(container, onRename);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-cancel]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onRename).not.toHaveBeenCalled();
+    expect(
+      container.querySelector('[data-account-id="a"] [data-rename-input]'),
+    ).toBeNull();
+    expect(container.textContent).toContain('Old Name');
+    expect(container.querySelector('[data-rename-account="a"]')).not.toBeNull();
+  });
+
+  it('pressing Escape in the input cancels the rename', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount({id: 'a', label: 'Old Name'})], null);
+    const onRename = vi.fn();
+    attachRenameAccountHandler(container, onRename);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-rename-account="a"]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-rename-input]',
+    );
+    input!.dispatchEvent(
+      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}),
+    );
+
+    expect(onRename).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Old Name');
   });
 });
 

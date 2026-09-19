@@ -3,11 +3,12 @@ import type {GetAccountsResult} from '@/lib/messages';
 import {sendBackgroundMessage} from '@/lib/messages';
 import {
   attachAddAccountHandler,
+  attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
   renderPopup,
   showAddAccountError,
-  showSwitchError,
+  showListError,
 } from '@/lib/popup-view';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -33,6 +34,9 @@ async function loadAndRender(container: HTMLElement): Promise<void> {
   });
   attachSwitchAccountHandler(container, accountId => {
     void handleSwitchAccount(container, accountId);
+  });
+  attachRenameAccountHandler(container, (accountId, label) => {
+    void handleRenameAccount(container, accountId, label);
   });
 }
 
@@ -62,9 +66,28 @@ async function handleSwitchAccount(
   } catch (error) {
     console.error('Failed to switch account', error);
     await loadAndRender(container);
-    showSwitchError(
+    showListError(
       container,
       "Couldn't switch shops. Try removing and re-adding this account.",
     );
+  }
+}
+
+async function handleRenameAccount(
+  container: HTMLElement,
+  accountId: string,
+  label: string,
+): Promise<void> {
+  try {
+    await sendBackgroundMessage<void>({
+      type: 'RENAME_ACCOUNT',
+      id: accountId,
+      label,
+    });
+    await loadAndRender(container);
+  } catch (error) {
+    console.error('Failed to rename account', error);
+    await loadAndRender(container);
+    showListError(container, "Couldn't rename this shop. Try again.");
   }
 }

@@ -42,7 +42,7 @@ function renderAccountList(
   return `
     <div class="p-4 pb-2">
       <h1 class="text-lg font-semibold">Store Switcheroo</h1>
-      <p data-switch-error class="mt-1 text-sm text-red-600"></p>
+      <p data-list-error class="mt-1 text-sm text-red-600"></p>
     </div>
     <ul class="divide-y divide-slate-100">${items}</ul>
   `;
@@ -61,8 +61,17 @@ function renderAccountItem(account: Account, isActive: boolean): string {
 
   return `
     <li data-account-id="${escapeHtml(account.id)}" class="flex items-center justify-between gap-2 px-4 py-2">
-      <span class="truncate">${escapeHtml(account.label)}</span>
-      ${status}
+      <span data-account-label class="truncate">${escapeHtml(account.label)}</span>
+      <div class="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          data-rename-account="${escapeHtml(account.id)}"
+          class="shrink-0 rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50"
+        >
+          Rename
+        </button>
+        ${status}
+      </div>
     </li>
   `;
 }
@@ -154,13 +163,133 @@ export function attachSwitchAccountHandler(
 }
 
 /** Shows an error message above the account list. */
-export function showSwitchError(container: HTMLElement, message: string): void {
-  const errorEl = container.querySelector<HTMLParagraphElement>(
-    '[data-switch-error]',
-  );
+export function showListError(container: HTMLElement, message: string): void {
+  const errorEl =
+    container.querySelector<HTMLParagraphElement>('[data-list-error]');
   if (errorEl) {
     errorEl.textContent = message;
   }
+}
+
+// Stashes an account item's original markup while it's in rename-edit mode,
+// so Cancel (or Escape) can restore it without a full popup re-render.
+const originalItemHtml = new WeakMap<HTMLLIElement, string>();
+
+/**
+ * Wires "Rename" button clicks via event delegation on `container`. Renaming
+ * an account swaps its list item into an inline edit form rather than
+ * triggering a full popup re-render, so the rest of the list (and any
+ * in-progress switch) is undisturbed while the user types.
+ */
+export function attachRenameAccountHandler(
+  container: HTMLElement,
+  onRename: (accountId: string, label: string) => void,
+): void {
+  container.addEventListener('click', event => {
+    const target = event.target as HTMLElement;
+
+    const renameButton = target.closest<HTMLButtonElement>(
+      '[data-rename-account]',
+    );
+    if (renameButton) {
+      startRenameEdit(renameButton);
+      return;
+    }
+
+    const cancelButton = target.closest<HTMLButtonElement>(
+      '[data-rename-cancel]',
+    );
+    if (cancelButton) {
+      cancelRenameEdit(cancelButton);
+      return;
+    }
+
+    const saveButton = target.closest<HTMLButtonElement>('[data-rename-save]');
+    if (saveButton) {
+      submitRenameEdit(saveButton, onRename);
+    }
+  });
+
+  container.addEventListener('keydown', event => {
+    const input = (event.target as HTMLElement).closest<HTMLInputElement>(
+      '[data-rename-input]',
+    );
+    if (!input) {
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitRenameEdit(input, onRename);
+    } else if (event.key === 'Escape') {
+      cancelRenameEdit(input);
+    }
+  });
+}
+
+function startRenameEdit(renameButton: HTMLButtonElement): void {
+  const item = renameButton.closest<HTMLLIElement>('[data-account-id]');
+  const labelEl = item?.querySelector<HTMLElement>('[data-account-label]');
+  if (!item || !labelEl) {
+    return;
+  }
+
+  originalItemHtml.set(item, item.innerHTML);
+  const currentLabel = labelEl.textContent ?? '';
+  item.innerHTML = `
+    <form data-rename-form class="flex flex-1 items-center gap-2">
+      <input
+        data-rename-input
+        type="text"
+        value="${escapeHtml(currentLabel)}"
+        class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+      />
+      <button
+        type="button"
+        data-rename-save
+        class="shrink-0 rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white"
+      >
+        Save
+      </button>
+      <button
+        type="button"
+        data-rename-cancel
+        class="shrink-0 rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50"
+      >
+        Cancel
+      </button>
+    </form>
+  `;
+  const input = item.querySelector<HTMLInputElement>('[data-rename-input]');
+  input?.focus();
+  input?.select();
+}
+
+function cancelRenameEdit(elementInsideItem: HTMLElement): void {
+  const item = elementInsideItem.closest<HTMLLIElement>('[data-account-id]');
+  if (!item) {
+    return;
+  }
+  const original = originalItemHtml.get(item);
+  if (original === undefined) {
+    return;
+  }
+  item.innerHTML = original;
+  originalItemHtml.delete(item);
+}
+
+function submitRenameEdit(
+  elementInsideItem: HTMLElement,
+  onRename: (accountId: string, label: string) => void,
+): void {
+  const item = elementInsideItem.closest<HTMLLIElement>('[data-account-id]');
+  const accountId = item?.dataset.accountId;
+  const input = item?.querySelector<HTMLInputElement>('[data-rename-input]');
+  const label = input?.value.trim();
+  if (!item || !accountId || !label) {
+    return;
+  }
+  originalItemHtml.delete(item);
+  onRename(accountId, label);
 }
 
 // Account labels are free text the user typed — never trust them as HTML.
