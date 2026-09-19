@@ -62,13 +62,20 @@ function renderAccountItem(account: Account, isActive: boolean): string {
   return `
     <li data-account-id="${escapeHtml(account.id)}" class="flex items-center justify-between gap-2 px-4 py-2">
       <span data-account-label class="truncate">${escapeHtml(account.label)}</span>
-      <div class="flex shrink-0 items-center gap-1">
+      <div data-account-actions class="flex shrink-0 items-center gap-1">
         <button
           type="button"
           data-rename-account="${escapeHtml(account.id)}"
           class="shrink-0 rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50"
         >
           Rename
+        </button>
+        <button
+          type="button"
+          data-remove-account="${escapeHtml(account.id)}"
+          class="shrink-0 rounded border border-slate-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+        >
+          Remove
         </button>
         ${status}
       </div>
@@ -290,6 +297,94 @@ function submitRenameEdit(
   }
   originalItemHtml.delete(item);
   onRename(accountId, label);
+}
+
+// Stashes an account item's action-button-group markup while it's showing
+// the remove confirmation, so Cancel can restore it without a full re-render.
+const originalActionsHtml = new WeakMap<HTMLElement, string>();
+
+/**
+ * Wires "Remove" button clicks via event delegation on `container`. Removing
+ * an account is a two-step confirm — the first click swaps the action
+ * buttons for a "Confirm"/"Cancel" pair rather than a native `confirm()`
+ * dialog, which can be dismissed by the popup losing focus.
+ */
+export function attachRemoveAccountHandler(
+  container: HTMLElement,
+  onRemove: (accountId: string) => void,
+): void {
+  container.addEventListener('click', event => {
+    const target = event.target as HTMLElement;
+
+    const removeButton = target.closest<HTMLButtonElement>(
+      '[data-remove-account]',
+    );
+    if (removeButton) {
+      startRemoveConfirm(removeButton);
+      return;
+    }
+
+    const cancelButton = target.closest<HTMLButtonElement>(
+      '[data-remove-cancel]',
+    );
+    if (cancelButton) {
+      cancelRemoveConfirm(cancelButton);
+      return;
+    }
+
+    const confirmButton = target.closest<HTMLButtonElement>(
+      '[data-remove-confirm]',
+    );
+    if (confirmButton && !confirmButton.disabled) {
+      const accountId = confirmButton.dataset.removeConfirm;
+      if (accountId) {
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Removing…';
+        onRemove(accountId);
+      }
+    }
+  });
+}
+
+function startRemoveConfirm(removeButton: HTMLButtonElement): void {
+  const actions = removeButton.closest<HTMLElement>('[data-account-actions]');
+  const accountId = removeButton.dataset.removeAccount;
+  if (!actions || !accountId) {
+    return;
+  }
+
+  originalActionsHtml.set(actions, actions.innerHTML);
+  actions.innerHTML = `
+    <button
+      type="button"
+      data-remove-confirm="${escapeHtml(accountId)}"
+      class="shrink-0 rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+    >
+      Confirm
+    </button>
+    <button
+      type="button"
+      data-remove-cancel
+      class="shrink-0 rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50"
+    >
+      Cancel
+    </button>
+  `;
+}
+
+function cancelRemoveConfirm(elementInsideActions: HTMLElement): void {
+  const actions = elementInsideActions.closest<HTMLElement>(
+    '[data-account-actions]',
+  );
+  if (!actions) {
+    return;
+  }
+  const original = originalActionsHtml.get(actions);
+  if (original === undefined) {
+    return;
+  }
+  actions.innerHTML = original;
+  originalActionsHtml.delete(actions);
 }
 
 // Account labels are free text the user typed — never trust them as HTML.
