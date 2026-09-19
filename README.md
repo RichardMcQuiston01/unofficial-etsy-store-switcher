@@ -14,13 +14,37 @@ See `ROADMAP.md` for the development plan and `STORE_LISTING.md` for the Chrome 
 
 ## Getting Started
 
+Built with [WXT](https://wxt.dev) (Manifest V3, TypeScript, Vite) and TailwindCSS.
+
+### Prerequisites
+
+- Node.js 22+
+- npm
+
 ### Installation
 
-_Not yet published. Installation instructions will be added once the extension is available on the Chrome Web Store (or as a load-unpacked developer build)._
+```bash
+git clone https://github.com/RichardMcQuiston01/unofficial-etsy-store-switcher
+cd unofficial-etsy-store-switcher
+npm install
+```
 
 ### Usage
 
-_Coming soon._
+```bash
+npm run dev      # starts WXT's dev server with hot reload
+npm run build    # production build to .output/chrome-mv3
+npm run zip      # packages .output/chrome-mv3 for Chrome Web Store upload
+npm run check    # typecheck
+npm run lint     # gts lint
+npm run lint:fix # gts fix
+npm run test     # unit tests (Vitest)
+npm run test:e2e # end-to-end tests (Playwright, headed Chromium)
+```
+
+To load a development build in Chrome: `npm run build`, then open `chrome://extensions`, enable Developer mode, and "Load unpacked" pointing at `.output/chrome-mv3`.
+
+_There's no published version yet — see `ROADMAP.md` for the development plan._
 
 ## License
 

@@ -1,0 +1,4 @@
+build/
+.output/
+.wxt/
+node_modules/
