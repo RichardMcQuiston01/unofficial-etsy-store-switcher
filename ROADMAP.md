@@ -56,8 +56,8 @@ Research surfaced a fact that shapes everything downstream: Etsy enforces **one 
 ## Stage 2 — Repo & Workflow Setup
 
 - [x] Create `dev` and `staging` branches from `main`.
-- [ ] Configure branch protection rules on `main`, `staging`, and `dev` per the Workflow section above.
-- [ ] Add CI workflow skeleton (GitHub Actions): lint + unit tests on PRs into `dev`; full suite on merge to `staging`; build/package smoke test on merge to `main`.
+- [ ] Configure branch protection rules on `main`, `staging`, and `dev` per the Workflow section above. No branch-protection API is available in this session's toolset — this needs to be done manually in GitHub's repo settings.
+- [x] Add CI workflow skeleton (`.github/workflows/ci.yml`): lint + typecheck + unit tests on PRs into `dev`; full suite (adds Playwright e2e + build) on push to `staging`; build + `zip` + artifact upload on push to `main`. `npm run test`/`test:e2e` use `--passWithNoTests` so CI stays green before Stage 5 adds real tests, rather than red by default.
 - [x] Add `.gitignore` for `node_modules/`, WXT's build output (`.output/`, `.wxt/`), and test artifacts.
 
 ## Stage 3 — Project Scaffolding
