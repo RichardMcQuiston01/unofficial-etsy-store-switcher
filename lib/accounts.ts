@@ -31,13 +31,17 @@ function enqueueWrite<T>(operation: () => Promise<T>): Promise<T> {
   return result;
 }
 
-/** Returns all saved accounts, or an empty array on a fresh install. */
+/**
+ * Returns all saved accounts sorted by most-recently-used first, or an
+ * empty array on a fresh install.
+ */
 export async function getAccounts(): Promise<Account[]> {
   const value = await accountsItem.getValue();
   // Defensive: getValue() doesn't runtime-validate the stored shape, so a
   // corrupted or unexpectedly-shaped value is treated as empty rather than
   // returned as-is.
-  return Array.isArray(value) ? value : [];
+  const accounts = Array.isArray(value) ? value : [];
+  return [...accounts].sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt));
 }
 
 export interface AddAccountInput {
