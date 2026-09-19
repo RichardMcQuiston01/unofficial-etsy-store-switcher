@@ -75,11 +75,11 @@ Feature branch: `feature/project-scaffold`
 
 Independent modules with a defined interface contract — can be built on **parallel feature branches** once the contract is agreed:
 
-- `feature/storage-layer` — `chrome.storage.local` wrapper for account metadata (no plaintext credentials).
-- `feature/background-worker` — service worker skeleton: message routing, mediates the session-swap mechanism.
-- `feature/popup-shell` — popup UI shell (list view, empty state), no logic wired yet.
-- `feature/content-script` (if needed) — reads shop name/id from the active Etsy Shop Manager page for display.
-- `manifest.json` (generated via WXT): `action` popup, `host_permissions` scoped to `*.etsy.com`.
+- [x] `feature/storage-layer` — `lib/accounts.ts`, built on WXT's own `storage.defineItem` (typed, versioned, migration-capable) rather than a hand-rolled `chrome.storage.local` wrapper. Defines the `Account` interface (`id`, `label`, `shopName?`, `createdAt`, `lastUsedAt` — no credential/session fields; the switch mechanism replays cookies live rather than persisting them) that `background-worker` and `popup-shell` build against. Exposes `getAccounts`/`addAccount`/`renameAccount`/`removeAccount`/`touchAccount`, with writes serialized through an internal queue so concurrent calls (e.g. a rename racing a remove) don't lose an update. 13 Vitest unit tests using WXT's official `fakeBrowser` test double, covering the full storage-layer test matrix below plus the concurrency edge case.
+- [ ] `feature/background-worker` — service worker skeleton: message routing, mediates the session-swap mechanism.
+- [ ] `feature/popup-shell` — popup UI shell (list view, empty state), no logic wired yet.
+- [ ] `feature/content-script` (if needed) — reads shop name/id from the active Etsy Shop Manager page for display.
+- [x] `manifest.json` (generated via WXT): `action` popup, `host_permissions` scoped to `*.etsy.com` — done in Stage 3.
 
 ## Stage 5 — MVP Implementation
 
