@@ -1,10 +1,11 @@
 import {storage} from 'wxt/utils/storage';
 
 /**
- * A saved Etsy shop account. Only bookkeeping metadata — never a password
- * or session/cookie value. The actual session-swap mechanism (Stage 5,
- * feature/account-switch) reads and replays cookies live via
- * chrome.cookies at switch time; it doesn't persist them here.
+ * A saved Etsy shop account. Only bookkeeping metadata — never a password,
+ * and never session/cookie data either: those are real session tokens, so
+ * they're captured and stored separately by lib/sessions.ts, not here. See
+ * ROADMAP.md Stage 5 for why switching needs to persist session cookies at
+ * all (Chrome only keeps one live cookie jar per domain).
  */
 export interface Account {
   id: string;
