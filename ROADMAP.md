@@ -58,17 +58,18 @@ Research surfaced a fact that shapes everything downstream: Etsy enforces **one 
 - [x] Create `dev` and `staging` branches from `main`.
 - [ ] Configure branch protection rules on `main`, `staging`, and `dev` per the Workflow section above.
 - [ ] Add CI workflow skeleton (GitHub Actions): lint + unit tests on PRs into `dev`; full suite on merge to `staging`; build/package smoke test on merge to `main`.
-- [ ] Add `.gitignore` for `node_modules/`, `dist/`, `.wxt/`.
+- [x] Add `.gitignore` for `node_modules/`, WXT's build output (`.output/`, `.wxt/`), and test artifacts.
 
 ## Stage 3 — Project Scaffolding
 
 Feature branch: `feature/project-scaffold`
 
-- [ ] Initialize TypeScript + Manifest V3 project using **WXT** (wxt.dev) — actively maintained MV3 framework with file-based entrypoints and manifest generation.
-- [ ] Set up TailwindCSS for popup/options UI.
-- [ ] Set up `gts` (Google TypeScript Style Guide tooling) for lint/format.
-- [ ] Set up Vitest and Playwright config (no tests yet — this stage wires up the tooling that Stage 5's tests depend on).
-- [ ] Update README with real install/dev instructions for contributors.
+- [x] Initialize TypeScript + Manifest V3 project using **WXT** (wxt.dev) — actively maintained MV3 framework with file-based entrypoints and manifest generation. (Corrects the earlier assumption above: WXT's build output directory is `.output/`, not `dist/`.)
+- [x] Set up TailwindCSS for popup/options UI.
+- [x] Set up `gts` (Google TypeScript Style Guide tooling) for lint/format.
+- [x] Set up Vitest and Playwright config (no tests yet — this stage wires up the tooling that Stage 5's tests depend on).
+- [x] Update README with real install/dev instructions for contributors.
+- [x] `npm run build` produces a valid MV3 `manifest.json` scoped to `storage`/`cookies` permissions and `https://*.etsy.com/*` host permissions — verified by actually running the build, not just configuring it.
 
 ## Stage 4 — Core Architecture
 
