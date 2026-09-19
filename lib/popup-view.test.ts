@@ -2,9 +2,11 @@ import {describe, expect, it, vi} from 'vitest';
 import type {Account} from './accounts';
 import {
   attachAddAccountHandler,
+  attachSwitchAccountHandler,
   renderError,
   renderPopup,
   showAddAccountError,
+  showSwitchError,
 } from './popup-view';
 
 function makeAccount(overrides: Partial<Account> = {}): Account {
@@ -59,6 +61,82 @@ describe('renderPopup', () => {
     const item = container.querySelector('[data-account-id] span');
     expect(item?.textContent).toBe(longLabel);
     expect(item?.className).toContain('truncate');
+  });
+});
+
+describe('renderPopup active account state', () => {
+  it('shows a Switch button for every account when none is active', () => {
+    const container = document.createElement('div');
+    const accounts = [
+      makeAccount({id: 'a', label: 'Shop A'}),
+      makeAccount({id: 'b', label: 'Shop B'}),
+    ];
+
+    renderPopup(container, accounts, null);
+
+    expect(container.querySelectorAll('[data-switch-account]')).toHaveLength(2);
+    expect(container.textContent).not.toContain('Active');
+  });
+
+  it('shows an Active badge instead of a Switch button for the active account', () => {
+    const container = document.createElement('div');
+    const accounts = [
+      makeAccount({id: 'a', label: 'Shop A'}),
+      makeAccount({id: 'b', label: 'Shop B'}),
+    ];
+
+    renderPopup(container, accounts, 'a');
+
+    expect(
+      container.querySelector('[data-account-id="a"] [data-switch-account]'),
+    ).toBeNull();
+    expect(container.textContent).toContain('Active');
+    expect(
+      container.querySelector('[data-account-id="b"] [data-switch-account]'),
+    ).not.toBeNull();
+  });
+});
+
+describe('attachSwitchAccountHandler', () => {
+  it('calls onSwitch with the clicked account id and disables the button', () => {
+    const container = document.createElement('div');
+    const accounts = [makeAccount({id: 'a', label: 'Shop A'})];
+    renderPopup(container, accounts, null);
+    const onSwitch = vi.fn();
+    attachSwitchAccountHandler(container, onSwitch);
+
+    const button = container.querySelector<HTMLButtonElement>(
+      '[data-switch-account]',
+    );
+    button!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onSwitch).toHaveBeenCalledWith('a');
+    expect(button!.disabled).toBe(true);
+  });
+
+  it('ignores a second click on an already-disabled button', () => {
+    const container = document.createElement('div');
+    const accounts = [makeAccount({id: 'a', label: 'Shop A'})];
+    renderPopup(container, accounts, null);
+    const onSwitch = vi.fn();
+    attachSwitchAccountHandler(container, onSwitch);
+
+    const button = container.querySelector<HTMLButtonElement>(
+      '[data-switch-account]',
+    );
+    button!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    button!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(onSwitch).toHaveBeenCalledTimes(1);
+  });
+
+  it('showSwitchError displays a message above the account list', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null);
+
+    showSwitchError(container, 'Something went wrong.');
+
+    expect(container.textContent).toContain('Something went wrong.');
   });
 });
 

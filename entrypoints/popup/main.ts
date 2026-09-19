@@ -1,11 +1,13 @@
 import './style.css';
-import type {Account} from '@/lib/accounts';
+import type {GetAccountsResult} from '@/lib/messages';
 import {sendBackgroundMessage} from '@/lib/messages';
 import {
   attachAddAccountHandler,
+  attachSwitchAccountHandler,
   renderError,
   renderPopup,
   showAddAccountError,
+  showSwitchError,
 } from '@/lib/popup-view';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -23,12 +25,14 @@ async function init(container: HTMLElement): Promise<void> {
 }
 
 async function loadAndRender(container: HTMLElement): Promise<void> {
-  const accounts = await sendBackgroundMessage<Account[]>({
-    type: 'GET_ACCOUNTS',
-  });
-  renderPopup(container, accounts);
+  const {accounts, activeAccountId} =
+    await sendBackgroundMessage<GetAccountsResult>({type: 'GET_ACCOUNTS'});
+  renderPopup(container, accounts, activeAccountId);
   attachAddAccountHandler(container, label => {
     void handleAddAccount(container, label);
+  });
+  attachSwitchAccountHandler(container, accountId => {
+    void handleSwitchAccount(container, accountId);
   });
 }
 
@@ -37,13 +41,30 @@ async function handleAddAccount(
   label: string,
 ): Promise<void> {
   try {
-    await sendBackgroundMessage<Account>({type: 'ADD_ACCOUNT', input: {label}});
+    await sendBackgroundMessage<void>({type: 'ADD_ACCOUNT', input: {label}});
     await loadAndRender(container);
   } catch (error) {
     console.error('Failed to add account', error);
     showAddAccountError(
       container,
       "Couldn't save this shop. Make sure you're logged into Etsy in this browser, then try again.",
+    );
+  }
+}
+
+async function handleSwitchAccount(
+  container: HTMLElement,
+  accountId: string,
+): Promise<void> {
+  try {
+    await sendBackgroundMessage<void>({type: 'SWITCH_ACCOUNT', id: accountId});
+    await loadAndRender(container);
+  } catch (error) {
+    console.error('Failed to switch account', error);
+    await loadAndRender(container);
+    showSwitchError(
+      container,
+      "Couldn't switch shops. Try removing and re-adding this account.",
     );
   }
 }
