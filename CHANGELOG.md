@@ -24,3 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Project naming direction: "Store Switcheroo: Manage Multiple Online Shops," moving "Etsy" out of the title into the description to reduce trademark/impersonation review risk.
+
+### Removed
+
+- Descoped the planned content script: Etsy's Shop Manager URL has no shop identifier, so reading a real shop name would require scraping fragile page DOM. Saving an account will just ask the user to type the shop label instead.
