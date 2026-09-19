@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `dev` and `staging` branches for the feature-branch → `dev` → `staging` → `main` workflow.
 - Project scaffold: WXT (Manifest V3 + TypeScript + Vite), TailwindCSS, `gts` (lint/format), Vitest and Playwright configs. Minimal placeholder background service worker and popup — real logic lands in Stage 4 onward.
 - CI workflow (`.github/workflows/ci.yml`): lint + typecheck + unit tests on PRs into `dev`; full suite (adds e2e + build) on push to `staging`; build/zip/artifact upload on push to `main`.
+- Storage layer (`lib/accounts.ts`): typed, tested CRUD for saved Etsy accounts (label, shop name, timestamps — no credentials) backed by WXT's `storage.defineItem`, with writes serialized to avoid races between concurrent calls. 13 Vitest unit tests.
 
 ### Changed
 
