@@ -12,9 +12,9 @@
     "check": "tsc --noEmit",
     "lint": "gts lint",
     "lint:fix": "gts fix",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --pass-with-no-tests"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
