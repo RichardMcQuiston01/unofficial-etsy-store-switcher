@@ -47,7 +47,7 @@ Store Switcheroo is an independent, third-party browser extension and is not aff
 
 ## Category
 
-Suggested primary category: **Productivity** (fallback: **Workflow & Planning**, if offered as a distinct category at submission time — categories have shifted before, so confirm the live list in the Developer Dashboard).
+**Tools** (under the Productivity group in the Developer Dashboard's live category list — a plain "Productivity" option no longer exists as of submission; the dashboard groups Communication/Developer Tools/Education/Tools/Workflow & Planning under it). Tools fits best: this is a utility for managing browser session state, not task/project planning (Workflow & Planning), messaging (Communication), or developer-facing (Developer Tools).
 
 ## Screenshots
 
