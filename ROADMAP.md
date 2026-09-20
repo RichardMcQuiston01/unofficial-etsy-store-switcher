@@ -49,7 +49,8 @@ Research surfaced a fact that shapes everything downstream: Etsy enforces **one 
 - [x] Naming direction chosen: **"Store Switcheroo: Manage Multiple Online Shops"** — keeps "Etsy" out of the title to reduce Impersonation & IP review risk (see `STORE_LISTING.md`); confirm before Chrome Web Store submission.
 - [x] Icon avoids Etsy's brand colors/logo — an original navy/white double-arrow glyph, built in Stage 5's `feature/icons-styling` (`public/icon-{16,48,128}.png`).
 - [x] Non-affiliation disclaimer drafted (README.md and STORE_LISTING.md, kept in sync).
-- [ ] Write the Privacy Policy (required by Chrome Web Store once the extension touches account/session data) and the "Limited Use" data disclosure statement. Publish at a stable URL. **Must explicitly disclose session-cookie storage** (Stage 5's `account-save` persists real Etsy session tokens locally to make switching instant — see the Security entry in `CHANGELOG.md`), not just the absence of stored passwords.
+- [x] Privacy Policy drafted (`PRIVACY_POLICY.md`), covering data collected (shop labels, Etsy session cookies, timestamps), what's explicitly *not* collected (password, page content, browsing history), local-only storage, and the "no third party" disclosure — explicitly discloses session-cookie storage per the Security entry in `CHANGELOG.md`, not just the absence of stored passwords.
+- [ ] Publish the drafted policy at a stable URL. Decided: will live on the `hiredhandhq.com` domain (the user's own hosting, not GitHub Pages) — exact page path not yet chosen. Once published, fill in the real URL in `STORE_LISTING.md`'s short description and `PRIVACY_POLICY.md`'s Contact section (both currently marked TBD).
 - [ ] Define the permission set up front and write permission-justification text for each (narrowest possible; avoid `<all_urls>` — scope to `https://*.etsy.com/*`).
 - [ ] If the paid tier ships, add a Payments & Purchases policy compliance check to this stage (see Stage 0 monetization notes).
 
@@ -118,9 +119,10 @@ Builds on Stage 4's modules. Each feature branch below ships with its own tests 
 
 ## Stage 8 — Store Listing Assets
 
-- [ ] Screenshots (1280×800 or 640×400) and small promo tile (440×280).
-- [ ] Finalize description copy within Chrome Web Store's character limits (`STORE_LISTING.md`), category selection.
-- [ ] Fill in the `[link]` placeholder in `STORE_LISTING.md` with the published Privacy Policy URL.
+- [x] Screenshots (`store-assets/screenshot-{1-switch,2-rename,3-remove}.png`, 1280×800): generated from the real built extension in headed Chromium with sample data (two saved shops, "Sunny Bloom Studio" and "Wildwood Woodcraft Co."), not hand-drawn mockups — each composited onto a branded background (matching the icon set's navy, `#0f172a`) with a simplified browser-toolbar frame for context and a one-line marketing headline. Covers the three most feature-relevant states: one-click switch, inline rename, and the two-step remove confirmation.
+- [x] Small promo tile (`store-assets/promo-tile-440x280.png`): the icon-set mark plus wordmark and a one-line tagline on the same navy background, at the exact required 440×280 size.
+- [x] Finalize description copy within Chrome Web Store's character limits (`STORE_LISTING.md`): title (45/75 chars), short summary (122/132 chars), and detailed description were already within limits from Stage 1's initial draft — reviewed again here, no changes needed. Category confirmed: **Productivity**.
+- [ ] Fill in the `[link]` placeholder in `STORE_LISTING.md` with the published Privacy Policy URL. Blocked on Stage 1's outstanding item: the policy text itself is drafted (`PRIVACY_POLICY.md`) but not yet published at a live URL — it will live on `hiredhandhq.com`, exact path TBD.
 
 ## Stage 9 — Chrome Web Store Submission (staging → main)
 
