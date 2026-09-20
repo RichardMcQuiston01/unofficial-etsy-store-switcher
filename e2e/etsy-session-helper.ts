@@ -2,14 +2,17 @@ import type {BrowserContext} from '@playwright/test';
 
 /**
  * Simulates being logged into Etsy by navigating a page to a (route-mocked,
- * no real network access) etsy.com URL and then seeding the session cookie.
+ * no real network access) etsy.com URL and setting the session cookie via
+ * `document.cookie` from that page.
  *
- * `context.addCookies()` alone can add a cookie to the context's cookie
- * store, but without an actual page having committed a navigation to that
- * origin first, the cookie isn't reliably visible to the extension's own
- * `chrome.cookies` API — only to Playwright's own `context.cookies()`
- * introspection. A real logged-in user always has that navigation history,
- * so this is also a more faithful simulation, not just a workaround.
+ * `context.addCookies()` injects the cookie through the CDP debugging
+ * protocol (`Network.setCookie`) rather than the browser's normal
+ * cookie-setting path — confirmed (see the diagnostics added in PR #17 and
+ * removed here) that a cookie added that way shows up in Playwright's own
+ * `context.cookies()` but is invisible to the extension's `chrome.cookies`
+ * API, on real Chromium, not just this repo's dev sandbox. Setting it via
+ * `document.cookie` goes through the same path a real logged-in page would,
+ * so `chrome.cookies.getAll` sees it like it would for a real user.
  */
 export async function seedEtsySession(
   context: BrowserContext,
@@ -20,13 +23,8 @@ export async function seedEtsySession(
   );
   const page = await context.newPage();
   await page.goto('https://www.etsy.com/');
-  await context.addCookies([
-    {
-      name: 'session',
-      value: cookieValue,
-      domain: '.etsy.com',
-      path: '/',
-    },
-  ]);
+  await page.evaluate(value => {
+    document.cookie = `session=${value}; domain=.etsy.com; path=/; secure`;
+  }, cookieValue);
   await page.close();
 }
