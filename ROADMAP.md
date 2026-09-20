@@ -146,8 +146,9 @@ Implemented as two feature branches (the original plan named four — `entitleme
 
 ## Stage 10 — Post-Launch
 
+- [x] Automated Web Store publishing: `.github/workflows/ci.yml` gained a `publish-chrome-web-store` job, running after `release-smoke-test` on every push to `main`, using `chrome-webstore-upload-cli` against the exact zip artifact the smoke test just built and validated (not a fresh rebuild). Decided (asked the user directly, since a push to `main` becoming a live store submission with no human checkpoint is a real tradeoff): full auto-publish, not upload-only — every push to `main` both uploads a new version and submits it for Chrome's review.
+  - **Requires a `CHROME_PUBLISHER_ID` repository secret that doesn't exist yet.** `chrome-webstore-upload-cli` v4 uses Chrome's newer Web Store API (v2), which requires a publisher id in addition to the OAuth client credentials and extension id — confirmed against the CLI's actual `--help` output and README, not assumed. Find it in the Chrome Web Store Developer Dashboard's URL while logged in, and add it as a repo secret alongside the existing `CHROME_CLIENT_ID`/`CHROME_CLIENT_SECRET`/`CHROME_EXTENSION_ID`/`CHROME_REFRESH_TOKEN`. Until it's set, this job will fail on the first push to `main` — not yet exercised since `staging` → `main` (Stage 9) hasn't happened.
 - [ ] Tag the release in `CHANGELOG.md` (move `[Unreleased]` entries under a version heading).
-- [ ] Optional: automate Web Store publishing via `chrome-webstore-upload-cli` once the listing is stable.
 - [ ] Monitor for Etsy site changes that could break the session-switch mechanism (React/Redux Shop Manager UI is not a stable scraping target).
 - [ ] Monitor Stripe/billing for failed entitlement checks or webhook issues.
 
