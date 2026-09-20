@@ -2,6 +2,7 @@ import {existsSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, expect, test} from '@playwright/test';
+import {seedEtsySession} from './etsy-session-helper';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.resolve(__dirname, '../.output/chrome-mv3');
@@ -31,17 +32,9 @@ test('switching accounts swaps the live Etsy session cookie', async () => {
     background ??= await context.waitForEvent('serviceworker');
     const extensionId = background.url().split('/')[2];
 
-    const popup = await context.newPage();
-
     // Simulate being logged into Etsy as "Shop A" and save that account.
-    await context.addCookies([
-      {
-        name: 'session',
-        value: 'shop-a-token',
-        domain: '.etsy.com',
-        path: '/',
-      },
-    ]);
+    await seedEtsySession(context, 'shop-a-token');
+    const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await popup.fill('input[name="label"]', 'Shop A');
     await popup.click('[data-add-account-form] button[type="submit"]');
@@ -53,14 +46,7 @@ test('switching accounts swaps the live Etsy session cookie', async () => {
     // Simulate logging into Etsy as "Shop B" (e.g. after signing out and
     // back in as a different shop) and save that account too.
     await context.clearCookies();
-    await context.addCookies([
-      {
-        name: 'session',
-        value: 'shop-b-token',
-        domain: '.etsy.com',
-        path: '/',
-      },
-    ]);
+    await seedEtsySession(context, 'shop-b-token');
     await popup.reload();
     await popup.fill('input[name="label"]', 'Shop B');
     await popup.click('[data-add-account-form] button[type="submit"]');
