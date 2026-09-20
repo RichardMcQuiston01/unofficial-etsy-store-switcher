@@ -8,7 +8,7 @@ Store Switcheroo is an independent, third-party browser extension and is not aff
 
 ## Overview
 
-Etsy ties one login to one shop, so sellers who run more than one shop have to log out and log back in every time they switch accounts. Store Switcheroo is a Chrome extension that saves your logged-in Etsy shop accounts and lets you switch between them in one click from the toolbar — no credentials stored in plaintext, no data sent anywhere but your own browser.
+Etsy ties one login to one shop, so sellers who run more than one shop have to log out and log back in every time they switch accounts. Store Switcheroo is a Chrome extension that saves your logged-in Etsy shop accounts and lets you switch between them in one click from the toolbar — no credentials stored in plaintext. The free tier (2 shops) never leaves your browser; the paid tiers (unlimited shops) check entitlement against a license key you activate, via a separate Licensing Service — see `PRIVACY_POLICY.md` for what that involves.
 
 See `ROADMAP.md` for the development plan and `STORE_LISTING.md` for the Chrome Web Store listing copy.
 

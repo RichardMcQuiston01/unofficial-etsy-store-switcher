@@ -29,13 +29,13 @@ KEY FEATURES
 • Save multiple Etsy shop accounts and switch between them in one click from the toolbar
 • See which shop account is currently active at a glance
 • No credentials stored in plaintext — session data stays local to your browser
-• Works entirely in your browser; no third-party servers involved
+• Free plan: up to 2 shops, entirely local to your browser. Paid plans: unlimited shops.
 
 WHO IT'S FOR
 Etsy ties one login to one shop, so sellers running multiple shops today have to log out and log back in every time they switch accounts. Store Switcheroo removes that friction.
 
 PRIVACY
-Store Switcheroo stores your account list and session data locally in your browser using Chrome's storage APIs. Nothing is transmitted to, sold to, or shared with any third party. See our Privacy Policy for full details: [link — will be published on hiredhandhq.com, exact path TBD; see Notes below].
+Store Switcheroo stores your account list and session data locally in your browser using Chrome's storage APIs — nothing is transmitted anywhere on the free plan. Paid plans verify your subscription via a license key you activate, checked against a separate licensing service; billing is handled by Stripe's hosted checkout, and the extension never sees your card details. See our Privacy Policy for full details: [link — will be published on hiredhandhq.com, exact path TBD; see Notes below].
 
 DISCLAIMER
 Store Switcheroo is an independent, third-party browser extension and is not affiliated with, endorsed by, or sponsored by Etsy, Inc. "Etsy" is a trademark of Etsy, Inc., referenced here only to describe compatibility.
