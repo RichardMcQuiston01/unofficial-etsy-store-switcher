@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Tailwind classes used outside `entrypoints/` (in `lib/popup-view.ts`) were being purged from the built CSS since `tailwind.config.js`'s `content` glob didn't scan `lib/`, so the popup rendered as unstyled text. Caught by loading the actual built extension in Chromium, not by the unit tests.
+- CI's `full-suite` job (push to `staging`) ran `npm run test:e2e` without a display server: Playwright's MV3 extension tests require `headless: false` (Manifest V3 extensions can only load in headed Chromium), which crashes with "Missing X server or $DISPLAY" on GitHub's runners. Caught on the first real `dev` → `staging` promotion once Stage 5's e2e specs actually existed to run. Fixed by installing `xvfb` and running the e2e step under `xvfb-run`.
 
 ### Changed
 

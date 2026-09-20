@@ -37,8 +37,12 @@ jobs:
       - run: npm run lint
       - run: npm run test
       - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y xvfb
       - run: npm run build
-      - run: npm run test:e2e
+      # MV3 extensions can only be loaded in headed Chromium (see
+      # playwright.config.ts), and GitHub's runners have no display server,
+      # so the e2e run needs a virtual one.
+      - run: xvfb-run -a npm run test:e2e
 
   release-smoke-test:
     name: Build & package smoke test
