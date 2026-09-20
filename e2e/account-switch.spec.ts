@@ -36,8 +36,35 @@ test('switching accounts swaps the live Etsy session cookie', async () => {
     await seedEtsySession(context, 'shop-a-token');
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    // Temporary diagnostics for the e2e-cookie-visibility investigation —
+    // narrows down exactly what the background worker sees at the moment
+    // of submission, so the next CI run gives us data instead of another
+    // guess. Remove once the actual root cause is confirmed and fixed.
+    const diagCookiesViaExtension = await background.evaluate(() =>
+      (globalThis as unknown as {chrome: any}).chrome.cookies.getAll({
+        domain: 'etsy.com',
+      }),
+    );
+    const diagCookiesViaContext = await context.cookies('https://www.etsy.com');
+    console.log(
+      'DIAG chrome.cookies.getAll (extension):',
+      JSON.stringify(diagCookiesViaExtension),
+    );
+    console.log(
+      'DIAG context.cookies() (playwright):',
+      JSON.stringify(diagCookiesViaContext),
+    );
+
     await popup.fill('input[name="label"]', 'Shop A');
     await popup.click('[data-add-account-form] button[type="submit"]');
+    await popup.waitForTimeout(500);
+    console.log(
+      'DIAG add-account error text:',
+      await popup.locator('[data-add-account-error]').textContent(),
+    );
+    console.log('DIAG popup HTML after submit:', await popup.content());
+
     await expect(popup.locator('[data-account-id]')).toHaveCount(1);
     await expect(popup.locator('li:has-text("Shop A")')).toContainText(
       'Active',
