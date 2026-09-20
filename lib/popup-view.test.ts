@@ -1,12 +1,16 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {Account} from './accounts';
+import {BILLING_TIERS} from './billing';
+import type {Entitlement} from './license';
 import {
+  attachActivateLicenseHandler,
   attachAddAccountHandler,
   attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
   renderPopup,
+  showActivateLicenseError,
   showAddAccountError,
   showListError,
 } from './popup-view';
@@ -402,5 +406,137 @@ describe('add-account form', () => {
     showAddAccountError(container, 'Something went wrong.');
 
     expect(container.textContent).toContain('Something went wrong.');
+  });
+});
+
+const FREE: Entitlement = {tier: 'free', expiresAt: null};
+const ETSY: Entitlement = {tier: 'etsy', expiresAt: null};
+const ENTERPRISE: Entitlement = {tier: 'enterprise', expiresAt: null};
+
+describe('entitlement badge', () => {
+  it('shows no badge on the free tier', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, FREE);
+    expect(container.querySelector('[data-entitlement-badge]')).toBeNull();
+  });
+
+  it('shows an Etsy badge on the etsy tier', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, ETSY);
+    expect(
+      container.querySelector('[data-entitlement-badge]')?.textContent,
+    ).toBe('Etsy');
+  });
+
+  it('shows an Enterprise badge on the enterprise tier', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null, ENTERPRISE);
+    expect(
+      container.querySelector('[data-entitlement-badge]')?.textContent,
+    ).toBe('Enterprise');
+  });
+});
+
+describe('free-tier cap and upgrade section', () => {
+  const accounts = [
+    makeAccount({id: 'a', label: 'Shop A'}),
+    makeAccount({id: 'b', label: 'Shop B'}),
+  ];
+
+  it('shows the add-account form, not the upgrade section, below the cap', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null, FREE);
+    expect(container.querySelector('[data-add-account-form]')).not.toBeNull();
+    expect(container.querySelector('[data-upgrade-section]')).toBeNull();
+  });
+
+  it('shows the upgrade section, not the add-account form, at the free-tier cap', () => {
+    const container = document.createElement('div');
+    renderPopup(container, accounts, null, FREE);
+    expect(container.querySelector('[data-add-account-form]')).toBeNull();
+    expect(container.querySelector('[data-upgrade-section]')).not.toBeNull();
+  });
+
+  it('shows the add-account form even at 2+ accounts on a paid tier', () => {
+    const container = document.createElement('div');
+    renderPopup(container, accounts, null, ETSY);
+    expect(container.querySelector('[data-add-account-form]')).not.toBeNull();
+    expect(container.querySelector('[data-upgrade-section]')).toBeNull();
+  });
+
+  it('links to every billing plan from both tiers', () => {
+    const container = document.createElement('div');
+    renderPopup(container, accounts, null, FREE);
+
+    const totalPlans = BILLING_TIERS.flatMap(tier => tier.plans);
+    for (const plan of totalPlans) {
+      const link = container.querySelector<HTMLAnchorElement>(
+        `[data-billing-plan="${plan.id}"]`,
+      );
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute('href')).toBe(plan.url);
+      expect(link?.getAttribute('target')).toBe('_blank');
+    }
+  });
+});
+
+describe('attachActivateLicenseHandler', () => {
+  it('the form starts hidden and the toggle reveals it', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, FREE);
+    attachActivateLicenseHandler(container, vi.fn());
+
+    const form = container.querySelector<HTMLFormElement>(
+      '[data-activate-license-form]',
+    );
+    expect(form?.classList.contains('hidden')).toBe(true);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-activate-license-toggle]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(form?.classList.contains('hidden')).toBe(false);
+  });
+
+  it('submitting calls onActivate with the trimmed key', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, FREE);
+    const onActivate = vi.fn();
+    attachActivateLicenseHandler(container, onActivate);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-activate-license-toggle]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    const input = container.querySelector<HTMLInputElement>(
+      '[data-activate-license-input]',
+    );
+    input!.value = '  WQXP-7K2M-9F3H-ZC4D  ';
+    container
+      .querySelector<HTMLFormElement>('[data-activate-license-form]')!
+      .dispatchEvent(new Event('submit', {cancelable: true}));
+
+    expect(onActivate).toHaveBeenCalledWith('WQXP-7K2M-9F3H-ZC4D');
+  });
+
+  it('does not call onActivate when the key is empty after trimming', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, FREE);
+    const onActivate = vi.fn();
+    attachActivateLicenseHandler(container, onActivate);
+
+    container
+      .querySelector<HTMLFormElement>('[data-activate-license-form]')!
+      .dispatchEvent(new Event('submit', {cancelable: true}));
+
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it('showActivateLicenseError displays a message in the form', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [], null, FREE);
+
+    showActivateLicenseError(container, 'That key was not recognized.');
+
+    expect(container.textContent).toContain('That key was not recognized.');
   });
 });

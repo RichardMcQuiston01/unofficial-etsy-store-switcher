@@ -1,13 +1,16 @@
 import './style.css';
+import {FREE_TIER_LIMIT_MESSAGE} from '@/lib/license';
 import type {GetAccountsResult} from '@/lib/messages';
 import {sendBackgroundMessage} from '@/lib/messages';
 import {
+  attachActivateLicenseHandler,
   attachAddAccountHandler,
   attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
   renderError,
   renderPopup,
+  showActivateLicenseError,
   showAddAccountError,
   showListError,
 } from '@/lib/popup-view';
@@ -27,9 +30,9 @@ async function init(container: HTMLElement): Promise<void> {
 }
 
 async function loadAndRender(container: HTMLElement): Promise<void> {
-  const {accounts, activeAccountId} =
+  const {accounts, activeAccountId, entitlement} =
     await sendBackgroundMessage<GetAccountsResult>({type: 'GET_ACCOUNTS'});
-  renderPopup(container, accounts, activeAccountId);
+  renderPopup(container, accounts, activeAccountId, entitlement);
   attachAddAccountHandler(container, label => {
     void handleAddAccount(container, label);
   });
@@ -42,6 +45,9 @@ async function loadAndRender(container: HTMLElement): Promise<void> {
   attachRemoveAccountHandler(container, accountId => {
     void handleRemoveAccount(container, accountId);
   });
+  attachActivateLicenseHandler(container, key => {
+    void handleActivateLicense(container, key);
+  });
 }
 
 async function handleAddAccount(
@@ -53,9 +59,33 @@ async function handleAddAccount(
     await loadAndRender(container);
   } catch (error) {
     console.error('Failed to add account', error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === FREE_TIER_LIMIT_MESSAGE) {
+      // The client-side cap check should have already hidden the
+      // add-account form, but re-render in case of a race (e.g. a second
+      // popup instance) so the upgrade section replaces it either way.
+      await loadAndRender(container);
+      return;
+    }
     showAddAccountError(
       container,
       "Couldn't save this shop. Make sure you're logged into Etsy in this browser, then try again.",
+    );
+  }
+}
+
+async function handleActivateLicense(
+  container: HTMLElement,
+  key: string,
+): Promise<void> {
+  try {
+    await sendBackgroundMessage<void>({type: 'ACTIVATE_LICENSE', key});
+    await loadAndRender(container);
+  } catch (error) {
+    console.error('Failed to activate license', error);
+    showActivateLicenseError(
+      container,
+      error instanceof Error ? error.message : 'Activation failed.',
     );
   }
 }

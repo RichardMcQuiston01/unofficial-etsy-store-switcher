@@ -1,15 +1,30 @@
 import type {Account} from './accounts';
+import {BILLING_TIERS} from './billing';
+import {
+  FREE_TIER_ACCOUNT_LIMIT,
+  hasUnlimitedShops,
+  type Entitlement,
+} from './license';
+
+const FREE_ENTITLEMENT: Entitlement = {tier: 'free', expiresAt: null};
 
 /** Renders either the empty state or the account list into `container`. */
 export function renderPopup(
   container: HTMLElement,
   accounts: Account[],
   activeAccountId: string | null = null,
+  entitlement: Entitlement = FREE_ENTITLEMENT,
 ): void {
+  const atFreeTierCap =
+    !hasUnlimitedShops(entitlement) &&
+    accounts.length >= FREE_TIER_ACCOUNT_LIMIT;
+
   container.innerHTML =
     (accounts.length === 0
-      ? renderEmptyState()
-      : renderAccountList(accounts, activeAccountId)) + renderAddAccountForm();
+      ? renderEmptyState(entitlement)
+      : renderAccountList(accounts, activeAccountId, entitlement)) +
+    (atFreeTierCap ? renderUpgradeSection() : renderAddAccountForm()) +
+    renderActivateLicenseSection();
 }
 
 /** Renders a load-failure message. */
@@ -22,10 +37,21 @@ export function renderError(container: HTMLElement): void {
   `;
 }
 
-function renderEmptyState(): string {
+function renderTierBadge(entitlement: Entitlement): string {
+  if (entitlement.tier === 'free') {
+    return '';
+  }
+  const label = entitlement.tier === 'enterprise' ? 'Enterprise' : 'Etsy';
+  return `<span data-entitlement-badge class="shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">${label}</span>`;
+}
+
+function renderEmptyState(entitlement: Entitlement): string {
   return `
     <div class="p-4">
-      <h1 class="text-lg font-semibold">Store Switcheroo</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-lg font-semibold">Store Switcheroo</h1>
+        ${renderTierBadge(entitlement)}
+      </div>
       <p class="mt-1 text-sm text-slate-500">No shops saved yet.</p>
     </div>
   `;
@@ -34,6 +60,7 @@ function renderEmptyState(): string {
 function renderAccountList(
   accounts: Account[],
   activeAccountId: string | null,
+  entitlement: Entitlement,
 ): string {
   const items = accounts
     .map(account => renderAccountItem(account, account.id === activeAccountId))
@@ -41,7 +68,10 @@ function renderAccountList(
 
   return `
     <div class="p-4 pb-2">
-      <h1 class="text-lg font-semibold">Store Switcheroo</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-lg font-semibold">Store Switcheroo</h1>
+        ${renderTierBadge(entitlement)}
+      </div>
       <p data-list-error class="mt-1 text-sm text-red-600"></p>
     </div>
     <ul class="divide-y divide-slate-100">${items}</ul>
@@ -106,6 +136,72 @@ function renderAddAccountForm(): string {
   `;
 }
 
+function renderUpgradeSection(): string {
+  const tiers = BILLING_TIERS.map(
+    tier => `
+      <div class="mt-2">
+        <p class="text-xs font-medium text-slate-700">${escapeHtml(tier.name)} — ${escapeHtml(tier.description)}</p>
+        <div class="mt-1 flex flex-wrap gap-1">
+          ${tier.plans
+            .map(
+              plan => `
+                <a
+                  data-billing-plan="${escapeHtml(plan.id)}"
+                  href="${escapeHtml(plan.url)}"
+                  target="_blank"
+                  rel="noopener"
+                  class="rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50"
+                >
+                  ${escapeHtml(plan.label)} · ${escapeHtml(plan.price)}
+                </a>
+              `,
+            )
+            .join('')}
+        </div>
+      </div>
+    `,
+  ).join('');
+
+  return `
+    <div data-upgrade-section class="border-t border-slate-100 p-4">
+      <p class="text-sm font-medium">Free plan is limited to ${FREE_TIER_ACCOUNT_LIMIT} shops.</p>
+      <p class="mt-1 text-sm text-slate-500">Upgrade for unlimited shops:</p>
+      ${tiers}
+    </div>
+  `;
+}
+
+function renderActivateLicenseSection(): string {
+  return `
+    <div data-activate-license-section class="border-t border-slate-100 p-4">
+      <button
+        type="button"
+        data-activate-license-toggle
+        class="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+      >
+        Already purchased? Enter your license key
+      </button>
+      <form data-activate-license-form class="mt-2 hidden">
+        <div class="flex gap-2">
+          <input
+            data-activate-license-input
+            type="text"
+            placeholder="License key"
+            class="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+          <button
+            type="submit"
+            class="rounded bg-slate-900 px-3 py-1 text-sm font-medium text-white"
+          >
+            Activate
+          </button>
+        </div>
+        <p data-activate-license-error class="mt-1 text-sm text-red-600"></p>
+      </form>
+    </div>
+  `;
+}
+
 /**
  * Wires the add-account form's submit handler. Must be called again after
  * every renderPopup/renderError call, since setting innerHTML tears down
@@ -135,6 +231,53 @@ export function showAddAccountError(
 ): void {
   const errorEl = container.querySelector<HTMLParagraphElement>(
     '[data-add-account-error]',
+  );
+  if (errorEl) {
+    errorEl.textContent = message;
+  }
+}
+
+/**
+ * Wires the "Already purchased?" toggle (reveals the activate-license form)
+ * and that form's submit handler. Must be called again after every
+ * renderPopup/renderError call, same as attachAddAccountHandler.
+ */
+export function attachActivateLicenseHandler(
+  container: HTMLElement,
+  onActivate: (key: string) => void,
+): void {
+  const toggle = container.querySelector<HTMLButtonElement>(
+    '[data-activate-license-toggle]',
+  );
+  const form = container.querySelector<HTMLFormElement>(
+    '[data-activate-license-form]',
+  );
+  toggle?.addEventListener('click', () => {
+    form?.classList.remove('hidden');
+    toggle.classList.add('hidden');
+    form
+      ?.querySelector<HTMLInputElement>('[data-activate-license-input]')
+      ?.focus();
+  });
+  form?.addEventListener('submit', event => {
+    event.preventDefault();
+    const input = form.querySelector<HTMLInputElement>(
+      '[data-activate-license-input]',
+    );
+    const key = input?.value.trim();
+    if (key) {
+      onActivate(key);
+    }
+  });
+}
+
+/** Shows an error message inside the activate-license form. */
+export function showActivateLicenseError(
+  container: HTMLElement,
+  message: string,
+): void {
+  const errorEl = container.querySelector<HTMLParagraphElement>(
+    '[data-activate-license-error]',
   );
   if (errorEl) {
     errorEl.textContent = message;
