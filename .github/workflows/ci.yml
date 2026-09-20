@@ -61,3 +61,35 @@ jobs:
         with:
           name: store-switcheroo-extension
           path: .output/*.zip
+
+  publish-chrome-web-store:
+    name: Publish to Chrome Web Store
+    needs: release-smoke-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: store-switcheroo-extension
+          path: .output
+      # Reuses the exact zip release-smoke-test just built and validated,
+      # rather than rebuilding, so what's published is provably what passed
+      # the smoke test.
+      - name: Locate built zip
+        id: zip
+        run: echo "path=$(ls .output/*.zip)" >> "$GITHUB_OUTPUT"
+      # chrome-webstore-upload-cli reads credentials from these exact
+      # environment variable names, not CLI flags (verified against its
+      # actual --help output and README, not assumed) — including
+      # PUBLISHER_ID, which the newer Chrome Web Store API (v2) requires in
+      # addition to the OAuth client credentials and extension id.
+      - name: Upload and publish
+        env:
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: |
+          npx chrome-webstore-upload-cli upload --source "${{ steps.zip.outputs.path }}"
+          npx chrome-webstore-upload-cli publish
