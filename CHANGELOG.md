@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Renaming an account: the popup's "Rename" button swaps an account's row into an inline edit form (pre-filled and pre-selected) instead of a separate dialog, wired to the already-built `RENAME_ACCOUNT` message. Enter saves, Escape/Cancel restores the original row without a network round-trip; an empty/whitespace label is rejected client-side. 6 new Vitest unit tests (61 total). `e2e/account-rename.spec.ts` covers save → rename → reopen popup.
 - Removing an account: the popup's "Remove" button requires a second confirming click (an inline "Confirm"/"Cancel" pair in place of the row's usual buttons) rather than a native `confirm()` dialog, wired to the already-built `REMOVE_ACCOUNT` message. Removing the last saved account correctly returns the popup to its empty state. 4 new Vitest unit tests (65 total). `e2e/account-remove.spec.ts` covers save → remove-then-cancel → remove-then-confirm.
 - Extension icon set (`public/icon-16.png`, `icon-48.png`, `icon-128.png`): an original navy/white double-arrow (↔) glyph, deliberately clear of Etsy's brand colors and logo.
+- Privacy Policy (`PRIVACY_POLICY.md`), covering the data the extension stores locally (shop labels, Etsy session cookies, timestamps), what it explicitly doesn't collect (password, page content, browsing history), and the no-third-party-sharing disclosure. Not yet published at a live URL — see `ROADMAP.md` Stage 1.
+- Chrome Web Store listing assets (`store-assets/`): three 1280×800 screenshots generated from the real built extension in headed Chromium (one-click switch, inline rename, remove confirmation) and a 440×280 promo tile, both reusing the icon set's navy/white branding.
 
 ### Fixed
 
