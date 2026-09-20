@@ -2,6 +2,10 @@
 
 Draft copy for the Chrome Web Store listing. Finalize the naming decision (see `ROADMAP.md` Stage 1) before submission; update this file if the name changes.
 
+## Extension ID
+
+`eliilkilgkdaemhiecgojbdlhaikfepm` — assigned when the packaged build was first uploaded to the Developer Dashboard as a draft item (permanent once assigned, even before publishing). This is the ID to give the license service for `ALLOWED_ORIGINS` (`chrome-extension://eliilkilgkdaemhiecgojbdlhaikfepm`) — see `ROADMAP.md` Stage 6.
+
 ## Title
 
 ```
@@ -53,9 +57,12 @@ Generated from the real built extension (Chromium, `launchPersistentContext`) wi
 - `screenshot-2-rename.png` — the inline rename-in-progress state.
 - `screenshot-3-remove.png` — the Remove confirmation step (Confirm/Cancel), showing accidental deletion is guarded against.
 
-## Promo tile
+## Promo tiles
 
-`store-assets/promo-tile-440x280.png` — the required small promo tile size, reusing the icon set's navy/white double-arrow mark.
+- `store-assets/promo-tile-440x280.png` — the required small promo tile size.
+- `store-assets/marquee-tile-1400x560.png` — the marquee promo tile (only needed if opting into featured placement, but provided regardless).
+
+Both reuse the icon set's navy/white double-arrow mark.
 
 ## Notes
 
