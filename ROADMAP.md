@@ -39,10 +39,10 @@ Research surfaced a fact that shapes everything downstream: Etsy enforces **one 
 ### Monetization model
 
 - **Free tier**: up to 2 connected shop accounts.
-- **Paid tier**: unlimited shop accounts, plus extra features (TBD — candidates: custom account labels/icons, keyboard-shortcut quick-switch, priority support).
-- [ ] Chrome Web Store no longer offers native in-extension recurring billing (Google's extension payments API was retired). Recurring/paid-tier billing needs an **external** payment flow (e.g. Stripe Checkout hosted page, linked out from the extension) plus some way for the extension to verify entitlement — decide between a lightweight backend/serverless function that issues a signed token after Stripe checkout vs. a manual license-key flow. Either way this adds real infrastructure beyond a pure client-side extension; scope it as its own stage (Stage 6) rather than folding it into MVP.
-- [ ] Confirm this pattern against Chrome Web Store's Payments & Purchases policy before building (freemium-with-external-checkout is common — e.g. Grammarly, Loom — but verify current policy text at submission time).
-- [ ] Decide what "2 shops" means at the enforcement layer: block adding a 3rd account client-side, with an upgrade CTA, rather than silently degrading.
+- **Paid tiers** (see Stage 6 for the built pricing/discount ladder): **Etsy** (unlimited Etsy shops, 1 device) and **Enterprise** (unlimited Etsy shops, 5 devices) — both Etsy-only today; a true multi-platform tier (Etsy + Shopify + others) needs real platform-switching support the extension doesn't have yet (Stage 11), so it isn't sold until then.
+- [x] Chrome Web Store no longer offers native in-extension recurring billing (Google's extension payments API was retired). Decided (Stage 6): entitlement is verified by a separate Licensing Service (Stripe + Supabase, `github.com/RichardMcQuiston01/license-service`) rather than a backend built in this repo — checkout is external Stripe Payment Links, and the extension calls the service's `licenses-activate`/`licenses-validate` endpoints with a license key the customer receives by email.
+- [ ] Confirm this pattern against Chrome Web Store's Payments & Purchases policy before submission (Stage 9) — freemium-with-external-checkout is common (e.g. Grammarly, Loom), but verify current policy text now that the actual flow is built.
+- [x] Decided (Stage 6): a 3rd account is blocked client-side *and* server-side (background worker) with an upgrade CTA, not silently degraded — the background-side check is the actual enforcement boundary, since a client-only check couldn't be trusted.
 
 ## Stage 1 — Compliance & Naming Groundwork
 
@@ -99,10 +99,24 @@ Builds on Stage 4's modules. Each feature branch below ships with its own tests 
 
 ## Stage 6 — Monetization Implementation
 
-- `feature/tier-enforcement` — enforce the 2-shop free-tier cap at the account-save step, with an upgrade CTA instead of a silent failure.
-- `feature/billing-checkout` — link out to Stripe Checkout (or chosen provider) for the paid tier.
-- `feature/entitlement-check` — verify paid status in the extension (token/license validation against the chosen backend approach from Stage 0).
-- `feature/upgrade-ui` — in-popup upgrade prompt and paid-state indicator.
+Resolves Stage 0's open "backend approach" question: entitlement is verified by a separate, shared **Licensing Service** (`github.com/RichardMcQuiston01/license-service` — a Stripe + Supabase backend already live and well ahead of this repo's own roadmap, backing this and future products) rather than a bespoke backend built in this repo. This extension has no server of its own; checkout is entirely external (Stripe Payment Links) and entitlement is checked via the license service's HTTP API.
+
+**Two paid tiers**, both "unlimited Etsy shops" (Etsy is still the only platform this extension supports — see Stage 11 below for why a true multi-platform tier isn't sold yet), differing only in device-activation count:
+
+| Tier | Monthly | Quarterly (90d) | Semi-annual (180d) | Annual | Devices |
+|---|---|---|---|---|---|
+| Free | — | — | — | — | — (2-shop cap, no license needed) |
+| Etsy | $2.99 | $7.99 | $14.99 | $27.99 | 1 |
+| Enterprise | $7.99 | $21.99 | $40.99 | $74.99 | 5 |
+
+Implemented as four feature branches, merged in dependency order (`entitlement-check` first — the other three build on it):
+
+- [x] `feature/entitlement-check` — `lib/license.ts`: a per-install `deviceId` (generated once, stored locally); `activateLicense(key)`/`revalidateLicense()` calling the license service's `licenses-activate`/`licenses-validate` endpoints (`POST https://qzmoikhehzkrhgnkwoin.supabase.co/functions/v1/...`, authenticated with a Supabase *publishable* key — safe to ship in client code, analogous to a Stripe publishable key); `getEntitlement()` reading the resulting `{tier, expiresAt}` from local storage only (no network call on every check). `revalidateLicenseIfStale()` re-checks at most every 12h (e.g. on popup open via `GET_ACCOUNTS`) and, on an explicit "no longer valid" response, downgrades to the free tier — but a network failure leaves the last-known entitlement alone rather than punishing someone for being offline. `LicenseTier` is `'free' | 'etsy' | 'enterprise'`; `hasUnlimitedShops()` is the one place that decides which tiers lift the free-tier cap, so a future third paid tier is a one-line change, not a new conditional scattered through the codebase. 15 new Vitest unit tests (`lib/license.test.ts`), all fetch calls mocked — no real network access needed to test this module. `lib/messages.ts`'s `GET_ACCOUNTS` response gained an `entitlement` field and a new `ACTIVATE_LICENSE` request type; `lib/background-handlers.ts` wires both, plus enforces `FREE_TIER_ACCOUNT_LIMIT` (2) in `ADD_ACCOUNT` — rejecting a 3rd account on the free tier with `FREE_TIER_LIMIT_MESSAGE` instead of a generic error, so Stage 6's next branch can render an upgrade CTA specifically rather than pattern-matching a vague string. 6 new/updated tests in `lib/background-handlers.test.ts`.
+- [ ] `feature/tier-enforcement` — client-side pre-check in the popup (before even attempting `ADD_ACCOUNT`) so hitting the cap shows the upgrade prompt immediately rather than after a round-trip; the background-side enforcement above is Stage 6's actual security boundary (a client-side-only check couldn't be trusted).
+- [ ] `feature/upgrade-ui` — popup UI: an entitlement badge (Free/Etsy/Enterprise), an upgrade section shown at the free-tier cap, and a collapsible "Have a license key?" form wired to `ACTIVATE_LICENSE`.
+- [ ] `feature/billing-checkout` — `lib/billing.ts`: Stripe Payment Link URLs (test mode — created via this session's Stripe tools, not the Dashboard) for both tiers × all four terms, each with `metadata.product_slug`/`metadata.tier` (and, for Enterprise, `metadata.activation_limit: "5"`) so the license service's webhook issues the right license. No Checkout Session is created dynamically — there's no backend on this side to do that from, so these pre-built links *are* the checkout flow. Popup renders them as plain external links (`target="_blank"`); the customer receives their license key by email after paying, then pastes it into the upgrade-ui form above.
+- [ ] Chrome Web Store Payments & Purchases policy — confirm the current policy text at submission time (Stage 9) now that the actual flow (external Stripe Payment Links, no in-extension payment collection) is built, not just planned.
+- [ ] `ALLOWED_ORIGINS` on the license service currently has no entry for this extension (nothing needed one before this stage) — its own CORS restriction only matters for non-privileged callers; this extension's `host_permissions` should include the license service's origin (`https://qzmoikhehzkrhgnkwoin.supabase.co/*`) so its own fetch calls aren't CORS-restricted regardless, but setting `ALLOWED_ORIGINS` to the real `chrome-extension://<id>` origin (once one exists — Stage 9) is still worth doing as defense-in-depth. Needs a `supabase secrets set` from the license-service project owner; no tool in this session can do it, and secrets shouldn't flow through chat regardless.
 
 ## Stage 7 — Full Testing Pass (dev → staging)
 
@@ -138,6 +152,15 @@ Builds on Stage 4's modules. Each feature branch below ships with its own tests 
 - [ ] Optional: automate Web Store publishing via `chrome-webstore-upload-cli` once the listing is stable.
 - [ ] Monitor for Etsy site changes that could break the session-switch mechanism (React/Redux Shop Manager UI is not a stable scraping target).
 - [ ] Monitor Stripe/billing for failed entitlement checks or webhook issues.
+
+## Stage 11 — Multi-Platform Tier (Etsy + Shopify + others)
+
+Not started — deliberately not scoped into Stage 6. A multi-platform tier is a real product feature, not just a pricing tier: this extension's entire session-switch mechanism (`lib/sessions.ts`) is built around `chrome.cookies.getAll({domain: 'etsy.com'})` and a manifest scoped to `host_permissions: ['https://*.etsy.com/*']`. Selling access to platforms the extension can't actually talk to would misrepresent the product, so no Stripe pricing exists for this tier yet (see Stage 6's decision on this) — it'll be created once the work below lands.
+
+- [ ] Decide the first additional platform (Shopify is the obvious candidate given the user base overlap) and confirm its session/cookie model is even switchable the same way Etsy's is — this needs research before assuming the Etsy approach generalizes.
+- [ ] Extend `host_permissions` and `lib/sessions.ts`'s cookie-capture/replay logic to be per-platform rather than hardcoded to `etsy.com`.
+- [ ] Extend the `Account` model (`lib/accounts.ts`) with a platform field, and the popup UI with a platform picker when saving an account.
+- [ ] Once real, working multi-platform switching exists: add the corresponding Stripe Product/Prices/Payment Links (same pattern as Stage 6's Etsy/Enterprise tiers) with a new `metadata.tier` value, and update `lib/license.ts`'s `LicenseTier` union and `hasUnlimitedShops()`/tier-display logic.
 
 ---
 

@@ -5,6 +5,14 @@ import {
   renameAccount,
   touchAccount,
 } from './accounts';
+import {
+  activateLicense,
+  FREE_TIER_ACCOUNT_LIMIT,
+  FREE_TIER_LIMIT_MESSAGE,
+  getEntitlement,
+  hasUnlimitedShops,
+  revalidateLicenseIfStale,
+} from './license';
 import type {BackgroundRequest, BackgroundResponse} from './messages';
 import {
   captureSession,
@@ -26,15 +34,27 @@ export async function handleMessage(
   try {
     switch (request.type) {
       case 'GET_ACCOUNTS':
+        // Re-checking on every popup open (rather than only after
+        // ACTIVATE_LICENSE) is what catches a canceled/expired subscription
+        // and downgrades the popup back to free-tier limits.
+        await revalidateLicenseIfStale();
         return {
           ok: true,
           data: {
             accounts: await getAccounts(),
             activeAccountId: await getActiveAccountId(),
+            entitlement: await getEntitlement(),
           },
         };
 
       case 'ADD_ACCOUNT': {
+        const entitlement = await getEntitlement();
+        if (!hasUnlimitedShops(entitlement)) {
+          const existingAccounts = await getAccounts();
+          if (existingAccounts.length >= FREE_TIER_ACCOUNT_LIMIT) {
+            return {ok: false, error: FREE_TIER_LIMIT_MESSAGE};
+          }
+        }
         const account = await addAccount(request.input);
         try {
           await captureSession(account.id);
@@ -63,6 +83,10 @@ export async function handleMessage(
       case 'SWITCH_ACCOUNT':
         await switchToAccount(request.id);
         await touchAccount(request.id);
+        return {ok: true, data: undefined};
+
+      case 'ACTIVATE_LICENSE':
+        await activateLicense(request.key);
         return {ok: true, data: undefined};
 
       default: {
