@@ -2,6 +2,7 @@ import {existsSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, expect, test} from '@playwright/test';
+import {seedEtsySession} from './etsy-session-helper';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.resolve(__dirname, '../.output/chrome-mv3');
@@ -28,14 +29,7 @@ test('renaming an account persists after closing and reopening the popup', async
     background ??= await context.waitForEvent('serviceworker');
     const extensionId = background.url().split('/')[2];
 
-    await context.addCookies([
-      {
-        name: 'session',
-        value: 'shop-a-token',
-        domain: '.etsy.com',
-        path: '/',
-      },
-    ]);
+    await seedEtsySession(context, 'shop-a-token');
 
     let popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
