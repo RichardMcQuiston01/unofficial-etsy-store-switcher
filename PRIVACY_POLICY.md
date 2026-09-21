@@ -2,6 +2,8 @@
 
 _Last updated: 2026-09-20_
 
+Published at: https://richardmcquiston.com/privacy-policy#switcheroo
+
 Store Switcheroo ("the extension") is an independent, third-party Chrome extension developed by Richard McQuiston. It is not affiliated with, endorsed by, or sponsored by Etsy, Inc.
 
 ## What the extension does
