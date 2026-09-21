@@ -21,6 +21,25 @@ describe('getAccounts', () => {
     await fakeBrowser.storage.local.set({accounts: 'not-an-array'});
     expect(await getAccounts()).toEqual([]);
   });
+
+  it('sorts by most-recently-used first', async () => {
+    // Real-clock timestamps can tie within the same millisecond in a fast
+    // test, so the clock is advanced explicitly between each touch to get
+    // a deterministic ordering instead of a potentially flaky one.
+    vi.useFakeTimers();
+    const oldest = await addAccount({label: 'Oldest'});
+    vi.advanceTimersByTime(1000);
+    const middle = await addAccount({label: 'Middle'});
+    vi.advanceTimersByTime(1000);
+    const newest = await addAccount({label: 'Newest'});
+    vi.advanceTimersByTime(1000);
+    await touchAccount(oldest.id);
+    vi.useRealTimers();
+
+    const accounts = await getAccounts();
+
+    expect(accounts.map(a => a.id)).toEqual([oldest.id, newest.id, middle.id]);
+  });
 });
 
 describe('addAccount', () => {

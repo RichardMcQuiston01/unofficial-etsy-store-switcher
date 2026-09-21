@@ -2,7 +2,7 @@
   "name": "store-switcheroo",
   "description": "Manage multiple online shops without the sign-out/sign-in dance.",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": ">=22"
