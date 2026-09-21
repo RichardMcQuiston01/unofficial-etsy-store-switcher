@@ -45,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `lib/popup-view.ts`'s `showSwitchError`/`data-switch-error` were renamed to `showListError`/`data-list-error` now that the same banner surfaces both switch and rename failures.
 - Widened the popup from 320px to 384px (`w-80` → `w-96`) — three per-account action buttons (Rename/Remove/Switch) were cramping shop labels down to a handful of visible characters at the old width.
 - `README.md`, `PRIVACY_POLICY.md`, and `STORE_LISTING.md` updated for the paid tiers: the earlier "no data sent anywhere but your own browser" / "no third-party servers involved" claims were only ever true for the free tier and are now stated that way, alongside a new explanation of what a paid-tier license activation sends to the Licensing Service (a license key and a random device id — never Etsy session data) and that billing itself goes through Stripe's hosted checkout, not through the extension.
+- Privacy Policy published at a live URL (`https://richardmcquiston.com/privacy-policy#switcheroo`, on the user's own domain rather than `hiredhandhq.com` as earlier planned). Filled into `STORE_LISTING.md`'s detailed description and `PRIVACY_POLICY.md`'s header — closes out the last blocker on `ROADMAP.md` Stage 1/9.
 
 ### Removed
 
