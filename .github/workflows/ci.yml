@@ -61,6 +61,10 @@ jobs:
         with:
           name: store-switcheroo-extension
           path: .output/*.zip
+          # .output is a dot-directory; upload-artifact's glob skips hidden
+          # paths unless this is set, otherwise it silently uploads nothing
+          # (see actions/upload-artifact#180).
+          include-hidden-files: true
 
   publish-chrome-web-store:
     name: Publish to Chrome Web Store
