@@ -50,7 +50,7 @@ Research surfaced a fact that shapes everything downstream: Etsy enforces **one 
 - [x] Icon avoids Etsy's brand colors/logo — an original navy/white double-arrow glyph, built in Stage 5's `feature/icons-styling` (`public/icon-{16,48,128}.png`).
 - [x] Non-affiliation disclaimer drafted (README.md and STORE_LISTING.md, kept in sync).
 - [x] Privacy Policy drafted (`PRIVACY_POLICY.md`), covering data collected (shop labels, Etsy session cookies, timestamps), what's explicitly *not* collected (password, page content, browsing history), local-only storage, and the "no third party" disclosure — explicitly discloses session-cookie storage per the Security entry in `CHANGELOG.md`, not just the absence of stored passwords.
-- [ ] Publish the drafted policy at a stable URL. Decided: will live on the `hiredhandhq.com` domain (the user's own hosting, not GitHub Pages) — exact page path not yet chosen. Once published, fill in the real URL in `STORE_LISTING.md`'s short description and `PRIVACY_POLICY.md`'s Contact section (both currently marked TBD).
+- [x] Published at a stable URL: https://richardmcquiston.com/privacy-policy#switcheroo (not `hiredhandhq.com` as earlier planned — the user's own domain instead). Filled into `STORE_LISTING.md` and `PRIVACY_POLICY.md`.
 - [ ] Define the permission set up front and write permission-justification text for each (narrowest possible; avoid `<all_urls>` — scope to `https://*.etsy.com/*`).
 - [ ] If the paid tier ships, add a Payments & Purchases policy compliance check to this stage (see Stage 0 monetization notes).
 
@@ -135,15 +135,15 @@ Implemented as two feature branches (the original plan named four — `entitleme
 - [x] Small promo tile (`store-assets/promo-tile-440x280.png`): the icon-set mark plus wordmark and a one-line tagline on the same navy background, at the exact required 440×280 size.
 - [x] Marquee promo tile (`store-assets/marquee-tile-1400x560.png`): only required if opting into featured placement, but provided regardless — same navy branding, larger icon and headline, at the exact required 1400×560 size.
 - [x] Finalize description copy within Chrome Web Store's character limits (`STORE_LISTING.md`): title (45/75 chars), short summary (122/132 chars), and detailed description were already within limits from Stage 1's initial draft — reviewed again here, no changes needed. Category confirmed: **Productivity**.
-- [ ] Fill in the `[link]` placeholder in `STORE_LISTING.md` with the published Privacy Policy URL. Blocked on Stage 1's outstanding item: the policy text itself is drafted (`PRIVACY_POLICY.md`) but not yet published at a live URL — it will live on `hiredhandhq.com`, exact path TBD.
+- [x] Filled in the Privacy Policy URL in `STORE_LISTING.md` (`https://richardmcquiston.com/privacy-policy#switcheroo`) — see Stage 1.
 
 ## Stage 9 — Chrome Web Store Submission (staging → main)
 
 - [x] Extension ID assigned: `eliilkilgkdaemhiecgojbdlhaikfepm` (see `STORE_LISTING.md`) — obtained by uploading a built `.output/chrome-mv3` zip as a draft item in the Developer Dashboard, which assigns a permanent ID even before publishing. Caught and fixed a real bug in the process: the scaffold's default `package.json` version (`0.0.0`) is rejected by the dashboard outright — bumped to `0.1.0`.
 - [ ] Merge `staging` → `main` once Stage 7 testing passes.
-- [ ] Register Chrome Web Store developer account ($5 one-time fee).
-- [ ] Upload build, complete Privacy Practices tab (data disclosure + Limited Use compliance), attach permission justifications, complete Payments & Purchases disclosure if the paid tier is live.
-- [ ] Submit for review; expect closer scrutiny given host permissions on `*.etsy.com` and the freemium model — budget 1–3+ weeks.
+- [x] Register Chrome Web Store developer account ($5 one-time fee).
+- [x] Upload build, complete Privacy Practices tab (data disclosure + Limited Use compliance), attach permission justifications, complete Payments & Purchases disclosure — user confirmed the Dashboard shows everything ready for submission (single purpose, storage/cookie/host permission justifications, remote-code disclosure, data-usage checkboxes, category, screenshots, promo tiles, and the now-live Privacy Policy URL all filled in).
+- [ ] Submit for review; expect closer scrutiny given host permissions on `*.etsy.com` and the freemium model — budget 1–3+ weeks. Will happen automatically once `main` gets its first push, via the `publish-chrome-web-store` CI job (Stage 10).
 - [ ] Address any reviewer feedback (most likely areas: permission scope, payments disclosure).
 
 ## Stage 10 — Post-Launch
