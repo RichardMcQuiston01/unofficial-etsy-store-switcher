@@ -25,7 +25,9 @@ export function renderPopup(
       ? renderEmptyState()
       : renderAccountList(accounts, activeAccountId)) +
     (atFreeTierCap ? renderUpgradeSection() : renderAddAccountForm()) +
-    renderActivateLicenseSection() +
+    renderActivateLicenseSection(
+      entitlement.tier === 'free' && !atFreeTierCap,
+    ) +
     renderTrustFooter();
 }
 
@@ -251,10 +253,17 @@ function renderUpgradeCtaPanel(): string {
   `;
 }
 
-function renderActivateLicenseSection(): string {
+/**
+ * `showUpgradeCtaPanel` must match `renderHeader`'s own condition for
+ * showing the "✨ Upgrade" toggle button — otherwise this panel (and its
+ * billing-plan links) either renders with nothing to reveal it, or ends up
+ * duplicating `renderUpgradeSection()`'s links when both are present at
+ * once (e.g. at the free-tier cap).
+ */
+function renderActivateLicenseSection(showUpgradeCtaPanel: boolean): string {
   return `
     <div data-activate-license-section class="border-t border-slate-100">
-      ${renderUpgradeCtaPanel()}
+      ${showUpgradeCtaPanel ? renderUpgradeCtaPanel() : ''}
       <div class="bg-brand-600 px-4 py-3">
         <button
           type="button"
