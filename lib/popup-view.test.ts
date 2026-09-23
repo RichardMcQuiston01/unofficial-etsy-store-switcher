@@ -8,6 +8,7 @@ import {
   attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
+  attachUpgradeCtaHandler,
   renderError,
   renderPopup,
   showActivateLicenseError,
@@ -54,7 +55,11 @@ describe('renderPopup', () => {
 
     renderPopup(container, accounts);
 
-    expect(container.querySelector('img')).toBeNull();
+    // Scoped to the account item itself — the popup's own branding now
+    // legitimately renders an <img> in its header, so a bare
+    // `container.querySelector('img')` would no longer isolate whether the
+    // malicious label got injected as markup.
+    expect(container.querySelector('[data-account-id] img')).toBeNull();
     expect(container.textContent).toContain('<img src=x onerror=alert(1)>');
   });
 
@@ -476,6 +481,53 @@ describe('free-tier cap and upgrade section', () => {
       expect(link).not.toBeNull();
       expect(link?.getAttribute('href')).toBe(plan.url);
       expect(link?.getAttribute('target')).toBe('_blank');
+    }
+  });
+});
+
+describe('upgrade CTA', () => {
+  it('shows the CTA on the free tier below the cap, not the forced upgrade section', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null, FREE);
+    expect(container.querySelector('[data-upgrade-cta-toggle]')).not.toBeNull();
+    expect(container.querySelector('[data-upgrade-section]')).toBeNull();
+  });
+
+  it('hides the CTA once at the free-tier cap, since the forced section already covers it', () => {
+    const container = document.createElement('div');
+    const accounts = [
+      makeAccount({id: 'a', label: 'Shop A'}),
+      makeAccount({id: 'b', label: 'Shop B'}),
+    ];
+    renderPopup(container, accounts, null, FREE);
+    expect(container.querySelector('[data-upgrade-cta-toggle]')).toBeNull();
+  });
+
+  it('hides the CTA on paid tiers', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null, ETSY);
+    expect(container.querySelector('[data-upgrade-cta-toggle]')).toBeNull();
+  });
+
+  it('the panel starts hidden and the toggle reveals it, linking to every plan', () => {
+    const container = document.createElement('div');
+    renderPopup(container, [makeAccount()], null, FREE);
+    attachUpgradeCtaHandler(container);
+
+    const panel = container.querySelector<HTMLElement>(
+      '[data-upgrade-cta-panel]',
+    )!;
+    expect(panel.classList.contains('hidden')).toBe(true);
+
+    container
+      .querySelector<HTMLButtonElement>('[data-upgrade-cta-toggle]')!
+      .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+    expect(panel.classList.contains('hidden')).toBe(false);
+    for (const plan of BILLING_TIERS.flatMap(tier => tier.plans)) {
+      expect(
+        panel.querySelector(`[data-billing-plan="${plan.id}"]`),
+      ).not.toBeNull();
     }
   });
 });
