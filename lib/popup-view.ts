@@ -168,9 +168,12 @@ function renderAddAccountForm(): string {
 }
 
 /**
- * One plan's tile within a pricing card. The monthly term is everyone's
- * lowest-commitment option, so it's marked "Popular" and given the brand
- * accent to draw the eye — the other terms stay visually secondary.
+ * One plan's tile within a pricing card — styled as an actual solid-color
+ * button (not just a bordered info card), so it visually reads as "click
+ * this to check out" rather than a static price display. The monthly term
+ * is everyone's lowest-commitment option, so it's the filled primary
+ * button and marked "Popular"; the other terms are still clearly buttons,
+ * just visually secondary.
  */
 function renderBillingPlanLink(plan: {
   id: string;
@@ -185,19 +188,19 @@ function renderBillingPlanLink(plan: {
       href="${escapeHtml(plan.url)}"
       target="_blank"
       rel="noopener"
-      class="relative flex flex-col items-start gap-0.5 rounded-md border px-2 py-1.5 transition-colors ${
+      class="relative flex flex-col items-start gap-0.5 rounded-md px-2 py-1.5 shadow-sm transition-colors ${
         isMonthly
-          ? 'border-brand-300 bg-brand-50 hover:border-brand-400 hover:bg-brand-100'
-          : 'border-slate-200 bg-white hover:border-brand-300 hover:bg-brand-50'
+          ? 'bg-brand-600 text-white hover:bg-brand-700'
+          : 'bg-brand-100 text-brand-900 hover:bg-brand-200'
       }"
     >
       ${
         isMonthly
-          ? '<span class="absolute -top-2 right-1 rounded-full bg-brand-600 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Popular</span>'
+          ? '<span class="absolute -top-2 right-1 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-brand-700 shadow-sm">Popular</span>'
           : ''
       }
-      <span class="text-[11px] font-medium text-slate-500">${escapeHtml(plan.label)}</span>
-      <span class="text-sm font-semibold text-brand-700">${escapeHtml(plan.price)}</span>
+      <span class="text-[11px] font-medium ${isMonthly ? 'text-brand-100' : 'text-brand-700'}">${escapeHtml(plan.label)}</span>
+      <span class="text-sm font-semibold">${escapeHtml(plan.price)} →</span>
     </a>
   `;
 }
