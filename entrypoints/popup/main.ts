@@ -8,6 +8,7 @@ import {
   attachRemoveAccountHandler,
   attachRenameAccountHandler,
   attachSwitchAccountHandler,
+  attachUpgradeCtaHandler,
   renderError,
   renderPopup,
   showActivateLicenseError,
@@ -48,6 +49,7 @@ async function loadAndRender(container: HTMLElement): Promise<void> {
   attachActivateLicenseHandler(container, key => {
     void handleActivateLicense(container, key);
   });
+  attachUpgradeCtaHandler(container);
 }
 
 async function handleAddAccount(
