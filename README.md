@@ -46,6 +46,14 @@ To load a development build in Chrome: `npm run build`, then open `chrome://exte
 
 _There's no published version yet — see `ROADMAP.md` for the development plan._
 
+## Buy Me a Coffee
+
+If this app, code, or repository has helped you or someone you know, please consider donating. I appreciate any help to offset the costs of development and/or AI Credits.
+
+[**Donate via PayPal**](https://www.paypal.com/ncp/payment/6UDSZ7MLCXKTS), or scan:
+
+[![Donate via PayPal](./donate.png)](https://www.paypal.com/ncp/payment/6UDSZ7MLCXKTS)
+
 ## License
 
 Apache2
