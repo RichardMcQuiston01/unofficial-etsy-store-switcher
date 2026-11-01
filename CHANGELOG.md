@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Retired the unused `staging` branch: the workflow is now feature branch → `dev` → `main`. CI's full suite (unit + e2e + build) runs on PRs into `main` instead of on pushes to `staging`, so the release PR is still gated by the e2e tests. `ROADMAP.md`'s workflow section updated to match.
+
+## [0.1.1] - 2026-11-01
+
 ### Added
 
 - Development roadmap (`ROADMAP.md`) covering product scope, branching/testing workflow, monetization model, and stages through Chrome Web Store submission.

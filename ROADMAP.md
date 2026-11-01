@@ -4,19 +4,18 @@ Development stages for **Store Switcheroo** (working title — see Stage 1), a C
 
 ## Workflow
 
-All work follows a three-branch model:
+All work follows a two-branch model (the former `staging` branch was retired as unused):
 
 - **`dev`** — integration branch. Every feature branch is cut from `dev` and merges back into `dev` via PR.
-- **`staging`** — QA gate. Once a milestone's feature branches have merged into `dev`, `dev` merges into `staging` for full testing (including e2e).
-- **`main`** — release branch. Once staging testing passes, `staging` merges into `main`.
+- **`main`** — release branch. Once a milestone's feature branches have merged into `dev`, `dev` is promoted to `main` via PR; CI runs the full suite (including e2e) on that PR.
 
 Rules:
 
-- [ ] Branch protection on all three: PR required to merge, status checks must pass, no force-push/delete. `main` and `staging` additionally require the full test suite (see Testing Policy) to pass before merge.
-- [ ] CI runs lint + unit tests on every PR into `dev`; the full suite (unit + Playwright e2e + build) runs on merge into `staging`; a final smoke test + packaging step runs on merge into `main`.
+- [ ] Branch protection on both: PR required to merge, status checks must pass, no force-push/delete. `main` additionally requires the full test suite (see Testing Policy) to pass before merge.
+- [ ] CI runs lint + unit tests on every PR into `dev`; the full suite (unit + Playwright e2e + build) runs on every PR into `main`; a final smoke test + packaging step runs on merge into `main`.
 - [ ] Feature branch naming: `feature/<short-description>` (e.g. `feature/storage-layer`, `feature/account-switch`).
 - [ ] Every feature branch PR updates `README.md` and `CHANGELOG.md` (`## [Unreleased]` section, Keep a Changelog format) when the change is user-visible — not deferred to release time.
-- [ ] Hotfixes branch from `main`, merge to `main`, and are immediately back-merged into `staging` and `dev` to avoid drift between the three branches.
+- [ ] Hotfixes branch from `main`, merge to `main`, and are immediately back-merged into `dev` to avoid drift between the two branches.
 - [ ] Chrome extensions have no live staging URL. "Staging" testing means: CI publishes the built `dist/` as a downloadable artifact for manual load-unpacked testing, and/or an **unlisted** Chrome Web Store listing is used as the pre-release target before promoting to the public listing.
 
 ## Testing Policy
@@ -151,7 +150,7 @@ Implemented as two feature branches (the original plan named four — `entitleme
 
 - [x] Automated Web Store publishing: `.github/workflows/ci.yml` gained a `publish-chrome-web-store` job, running after `release-smoke-test` on every push to `main`, using `chrome-webstore-upload-cli` against the exact zip artifact the smoke test just built and validated (not a fresh rebuild). Decided (asked the user directly, since a push to `main` becoming a live store submission with no human checkpoint is a real tradeoff): full auto-publish, not upload-only — every push to `main` both uploads a new version and submits it for Chrome's review.
   - **Requires a `CHROME_PUBLISHER_ID` repository secret that doesn't exist yet.** `chrome-webstore-upload-cli` v4 uses Chrome's newer Web Store API (v2), which requires a publisher id in addition to the OAuth client credentials and extension id — confirmed against the CLI's actual `--help` output and README, not assumed. Find it in the Chrome Web Store Developer Dashboard's URL while logged in, and add it as a repo secret alongside the existing `CHROME_CLIENT_ID`/`CHROME_CLIENT_SECRET`/`CHROME_EXTENSION_ID`/`CHROME_REFRESH_TOKEN`. Until it's set, this job will fail on the first push to `main` — not yet exercised since `staging` → `main` (Stage 9) hasn't happened.
-- [ ] Tag the release in `CHANGELOG.md` (move `[Unreleased]` entries under a version heading).
+- [x] Tag the release in `CHANGELOG.md` (moved `[Unreleased]` entries under `[0.1.1] - 2026-11-01`).
 - [ ] Monitor for Etsy site changes that could break the session-switch mechanism (React/Redux Shop Manager UI is not a stable scraping target).
 - [ ] Monitor Stripe/billing for failed entitlement checks or webhook issues.
 
