@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Donations now point at Ko-fi instead of PayPal: the README badge and a new `.github/FUNDING.yml`. The PayPal QR image is removed.
 - Retired the unused `staging` branch: the workflow is now feature branch → `dev` → `main`. CI's full suite (unit + e2e + build) runs on PRs into `main` instead of on pushes to `staging`, so the release PR is still gated by the e2e tests. `ROADMAP.md`'s workflow section updated to match.
 
 ## [0.1.1] - 2026-11-01
