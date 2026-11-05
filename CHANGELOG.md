@@ -6,12 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-05
+
+### Added
+
+- Live-mode billing (`lib/billing.ts`): created the live-mode Stripe Product/Prices/Payment Links for both tiers × all four terms (mirroring the test-mode set exactly) and a live-mode `stripe-webhook` endpoint, then pointed `lib/billing.ts` at the live URLs. Real purchases now issue real, activatable licenses.
+- Ko-fi funding: a `.github/FUNDING.yml` and a "Buy Me a Coffee" section in `README.md` linking to the Ko-fi page.
+
 ### Changed
 
-- Donations now point at Ko-fi instead of PayPal: the README badge and a new `.github/FUNDING.yml`. The PayPal QR image is removed.
 - Retired the unused `staging` branch: the workflow is now feature branch → `dev` → `main`. CI's full suite (unit + e2e + build) runs on PRs into `main` instead of on pushes to `staging`, so the release PR is still gated by the e2e tests. `ROADMAP.md`'s workflow section updated to match.
 
-## [0.1.1] - 2026-11-01
+## [0.1.1] - 2026-09-23
 
 ### Added
 
@@ -35,8 +41,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Marquee promo tile (`store-assets/marquee-tile-1400x560.png`), generated the same way as the small promo tile — reuses the icon set's navy/white branding, at the exact required 1400×560 size for Chrome Web Store's optional featured-placement asset.
 - Automated Chrome Web Store publishing (`.github/workflows/ci.yml`): a `publish-chrome-web-store` job runs after `release-smoke-test` on every push to `main`, uploading and publishing the exact zip artifact the smoke test already built and validated via `chrome-webstore-upload-cli`. Decided full auto-publish (not upload-only) after asking directly, since a push to `main` becoming a live store submission with no human checkpoint is a real tradeoff. Needs a `CHROME_PUBLISHER_ID` repository secret that doesn't exist yet — see `ROADMAP.md` Stage 10.
 - Popup redesign (`lib/popup-view.ts`, `tailwind.config.js`): the plain, unbranded popup looked untrustworthy for something asking people to pay, and the only way to see purchase options was already being at the free-tier cap. Adds a branded header bar (a `brand` color scale matching mcqforyou.design's forest green, `#2e4635`) with the extension icon and a persistent "✨ Upgrade" button for free-tier users below the cap, revealing the same billing-plan panel the at-cap flow already used. Replaces the loose row of text-link plans with per-tier pricing cards (2×2 grid of plan tiles styled as solid buttons, not bordered info cards, with the monthly term marked "Popular") — feedback after an initial pass was that the tiles didn't read as clickable checkout links. "Already purchased? Enter your license key" got its own colored strip at the bottom; the key field itself still stays hidden until clicked. Adds a one-line trust footer pulled from `PRIVACY_POLICY.md`'s actual claims. New Vitest coverage for the upgrade CTA's visibility rules and reveal behavior. Store listing screenshots (`store-assets/screenshot-*.png`) regenerated from the real redesigned popup to match.
-- Live-mode billing (`lib/billing.ts`): created the live-mode Stripe Product/Prices/Payment Links for both tiers × all four terms (mirroring the test-mode set exactly) and a live-mode `stripe-webhook` endpoint, then pointed `lib/billing.ts` at the live URLs. Real purchases now issue real, activatable licenses.
-- PayPal donate section in `README.md` ("Buy Me a Coffee", before License) with a PayPal-style QR code (`donate.png`) linking to the donation page. Documentation only — separate from the Stripe paid-plan billing in `lib/billing.ts`; no extension code or shipped bundle changes.
 
 ### Fixed
 
